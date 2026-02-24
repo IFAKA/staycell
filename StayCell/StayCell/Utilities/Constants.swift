@@ -45,6 +45,21 @@ enum BlockedDomains {
         "onlyfans.com", "www.onlyfans.com",
         "chaturbate.com", "www.chaturbate.com",
         "fapello.com", "www.fapello.com",
+        // Hentai / comics
+        "nhentai.net", "www.nhentai.net",
+        "e-hentai.org", "www.e-hentai.org", "exhentai.org",
+        "rule34.xxx", "www.rule34.xxx", "rule34.paheal.net",
+        "gelbooru.com", "www.gelbooru.com",
+        "8muses.com", "www.8muses.com",
+        "hentaifox.com", "www.hentaifox.com",
+        "imhentai.xxx", "www.imhentai.xxx",
+        "hitomi.la", "www.hitomi.la",
+        "luscious.net", "www.luscious.net",
+        "imagefap.com", "www.imagefap.com",
+        "tube8.com", "www.tube8.com",
+        "thisvid.com", "www.thisvid.com",
+        "slutload.com", "www.slutload.com",
+        "tnaflix.com", "www.tnaflix.com",
     ]
 
     static let gore: [String] = [
@@ -53,6 +68,19 @@ enum BlockedDomains {
         "bestgore.fun", "www.bestgore.fun",
         "kaotic.com", "www.kaotic.com",
         "crazyshit.com", "www.crazyshit.com",
+        "goregrish.com", "www.goregrish.com",
+        "xgore.net", "www.xgore.net",
+        "leakedreality.com", "www.leakedreality.com",
+        "goretoday.com", "www.goretoday.com",
+        "seegore.com", "www.seegore.com",
+        "watchpeopledie.tv", "www.watchpeopledie.tv",
+        "deathaddict.co",
+    ]
+
+    static let imageboard: [String] = [
+        "4chan.org", "www.4chan.org",
+        "4channel.org", "www.4channel.org",
+        "i.4cdn.org", "a.4cdn.org", "s.4cdn.org", "t.4cdn.org", "is.4chan.org",
     ]
 
     static let news: [String] = [
@@ -104,6 +132,25 @@ enum OverridePhrases {
         "Stillness is the beginning of wisdom.",
         "Watch and pray, that ye enter not into temptation.",
         "The struggle itself is the practice.",
+    ]
+}
+
+// MARK: - URL Keyword Blocking
+
+/// Keywords and path segments checked against the active browser tab URL every 15 seconds.
+/// Triggers the interception overlay as a soft block for content that /etc/hosts can't catch
+/// (e.g. NSFW subreddits on an otherwise-allowed domain).
+enum BlockedURLKeywords {
+    /// URL path segments that indicate NSFW content on otherwise-allowed domains.
+    static let paths: [String] = [
+        "/r/gonewild", "/r/nsfw", "/r/porn", "/r/sex", "/r/hentai",
+        "/r/rule34", "/r/realgirls", "/r/cumsluts",
+    ]
+
+    /// Substrings that anywhere in the URL indicate blocked content.
+    static let keywords: [String] = [
+        "porn", "xxx", "nsfw", "hentai", "gore",
+        "rule34", "gonewild", "nude", "naked",
     ]
 }
 

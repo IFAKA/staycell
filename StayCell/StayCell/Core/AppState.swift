@@ -30,6 +30,20 @@ final class AppState {
     var currentSessionIntention: String?
     var sessionsCompletedToday: Int = 0
 
+    // MARK: - Schedule Auto-Switch
+
+    /// Set when the user manually switches mode. The auto-switch timer respects this
+    /// and skips auto-switching until the next schedule block starts.
+    var lastManualModeSwitchTime: Date? {
+        didSet {
+            if let t = lastManualModeSwitchTime {
+                UserDefaults.standard.set(t, forKey: Keys.lastManualModeSwitchTime)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Keys.lastManualModeSwitchTime)
+            }
+        }
+    }
+
     // MARK: - Day Schedule
 
     var workdayStartHour: Int {
@@ -60,6 +74,7 @@ final class AppState {
         self.currentMode = Mode(rawValue: defaults.string(forKey: Keys.currentMode) ?? "") ?? .personalTime
         self.isOnboardingComplete = defaults.bool(forKey: Keys.onboardingComplete)
         self.isDaemonInstalled = defaults.bool(forKey: Keys.daemonInstalled)
+        self.lastManualModeSwitchTime = defaults.object(forKey: Keys.lastManualModeSwitchTime) as? Date
         self.workdayStartHour = defaults.object(forKey: Keys.workdayStartHour) as? Int ?? 9
         let savedDays = defaults.array(forKey: Keys.workDays) as? [Int]
         self.workDays = Set(savedDays ?? [2, 3, 4, 5, 6]) // Mon-Fri (Calendar weekday: Sun=1)
@@ -98,6 +113,7 @@ final class AppState {
         static let currentMode = "staycell.currentMode"
         static let onboardingComplete = "staycell.onboardingComplete"
         static let daemonInstalled = "staycell.daemonInstalled"
+        static let lastManualModeSwitchTime = "staycell.lastManualModeSwitchTime"
         static let workdayStartHour = "staycell.workdayStartHour"
         static let workDays = "staycell.workDays"
     }

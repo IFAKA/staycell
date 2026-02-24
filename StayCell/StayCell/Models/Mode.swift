@@ -40,13 +40,13 @@ enum Mode: String, Codable, CaseIterable, Sendable {
     var blockedCategories: Set<BlockCategory> {
         switch self {
         case .deepWork:
-            [.social, .video, .porn, .gore, .news]
+            [.social, .video, .porn, .gore, .news, .imageboard]
         case .shallowWork:
-            [.social, .video, .porn, .gore, .news]
+            [.social, .video, .porn, .gore, .news, .imageboard]
         case .personalTime:
             [.porn, .gore]
         case .offline:
-            [.social, .video, .porn, .gore, .news]
+            [.social, .video, .porn, .gore, .news, .imageboard]
         }
     }
 
@@ -63,6 +63,7 @@ enum BlockCategory: String, Codable, CaseIterable, Sendable {
     case porn
     case gore
     case news
+    case imageboard
 
     var domains: [String] {
         switch self {
@@ -76,6 +77,8 @@ enum BlockCategory: String, Codable, CaseIterable, Sendable {
             BlockedDomains.gore
         case .news:
             BlockedDomains.news
+        case .imageboard:
+            BlockedDomains.imageboard
         }
     }
 }

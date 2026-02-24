@@ -33,6 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var presentationDetector: PresentationDetector!
     private var appMonitor: AppMonitor!
     private var browserHistoryService: BrowserHistoryService!
+    private var urlKeywordMonitor: URLKeywordMonitor!
+    private var autoSwitchTimer: DispatchSourceTimer?
     private var overrideWindow: NSWindow?
     private var dashboardWindow: NSWindow?
     private var dbPool: DatabasePool?
@@ -125,9 +127,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         // Wire timer updates to UI
         setupTimerUIUpdates()
 
-        // Wire mode changes to menubar
-        modeEngine.onModeChanged = { [weak self] _ in
+        // Wire mode changes to menubar and URL keyword monitor
+        modeEngine.onModeChanged = { [weak self] mode in
             self?.menuBarManager.updateStatusItemDisplay()
+            if mode == .deepWork || mode == .shallowWork {
+                self?.urlKeywordMonitor.start()
+            } else {
+                self?.urlKeywordMonitor.stop()
+            }
         }
 
         // Start audio monitoring
@@ -161,8 +168,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
         browserHistoryService.importIfNeeded()
 
+        // Set up URL keyword soft-blocker
+        urlKeywordMonitor = URLKeywordMonitor(appState: appState, interceptionManager: interceptionManager)
+        if appState.currentMode == .deepWork || appState.currentMode == .shallowWork {
+            urlKeywordMonitor.start()
+        }
+
         // Set up wake detection and schedule
         setupScheduleSystem()
+        setupAutoSwitchTimer()
 
         // Register as login item
         registerLoginItem()
@@ -186,6 +200,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             keyboardShortcutService.unregister()
             presentationDetector.stopMonitoring()
             appMonitor.stopMonitoring()
+            urlKeywordMonitor.stop()
+            autoSwitchTimer?.cancel()
             xpcClient.disconnect()
             logger.info("StayCell app terminating cleanly")
         }
@@ -248,6 +264,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
 
         wakeDetector.startMonitoring()
+    }
+
+    // MARK: - Schedule Auto-Switch
+
+    @MainActor
+    private func setupAutoSwitchTimer() {
+        let t = DispatchSource.makeTimerSource(queue: .main)
+        t.schedule(deadline: .now() + 60, repeating: 60.0)
+        t.setEventHandler { [weak self] in
+            self?.checkScheduleAutoSwitch()
+        }
+        t.resume()
+        autoSwitchTimer = t
+    }
+
+    @MainActor
+    private func checkScheduleAutoSwitch() {
+        // Running session takes priority — never interrupt a timer mid-session
+        guard !appState.timerIsRunning else { return }
+
+        guard let block = scheduleEngine.currentBlock(at: Date()) else { return }
+        guard block.mode != appState.currentMode else { return }
+
+        // Respect manual override: if the user switched manually within this block, skip
+        if let lastManual = appState.lastManualModeSwitchTime, block.contains(lastManual) {
+            return
+        }
+
+        logger.info("Auto-switching to \(block.mode.rawValue) per schedule block '\(block.label)'")
+        Task {
+            do {
+                try await blockingEngine.applyMode(block.mode)
+                appState.currentMode = block.mode
+                menuBarManager.updateStatusItemDisplay()
+                if block.mode == .deepWork || block.mode == .shallowWork {
+                    urlKeywordMonitor.start()
+                } else {
+                    urlKeywordMonitor.stop()
+                }
+            } catch {
+                logger.error("Auto-switch failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     // MARK: - Helpers

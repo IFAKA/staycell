@@ -71,7 +71,10 @@ final class ModeEngine {
     }
 
     /// Switch to a mode without starting a timed session.
+    /// Marks the switch as manual so the auto-switch timer respects it within the current block.
     func switchMode(to mode: Mode) {
+        appState.lastManualModeSwitchTime = Date()
+
         // End any running session
         if currentSession != nil {
             endCurrentSession()

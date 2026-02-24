@@ -23,6 +23,7 @@
 		356DA0F1B29F42010454D1B8 /* FIRESnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17FF26D030DC02F224241F59 /* FIRESnapshot.swift */; };
 		3D7D8DEFC68E0471EB5B1A1D /* XPCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30FB8716639E82E5B121D348 /* XPCClient.swift */; };
 		3E8D4FBD755061AD104FB3BD /* BehaviorAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E56127B6CE310FDF23314C /* BehaviorAnalyzer.swift */; };
+		51ECE12B2AC0B89D4F33E4FD /* URLKeywordMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48B495AEA30E5E9A5DEF8048 /* URLKeywordMonitor.swift */; };
 		5C83499BFBE2576E117D7EA3 /* HostsFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EBD9D6F6EA92410A38FC4B /* HostsFileManager.swift */; };
 		5CF999EE06C0F63B8B428250 /* BrowserHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649F78881963B7D591BE9F6C /* BrowserHistoryService.swift */; };
 		6F2C0166347AB4112FEE7F47 /* BrowserURLService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B088BF065EA594627E75DFD0 /* BrowserURLService.swift */; };
@@ -80,6 +81,7 @@
 		30FB8716639E82E5B121D348 /* XPCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCClient.swift; sourceTree = "<group>"; };
 		32E56127B6CE310FDF23314C /* BehaviorAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehaviorAnalyzer.swift; sourceTree = "<group>"; };
 		34D5B325ECC198C4EE3A4426 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		48B495AEA30E5E9A5DEF8048 /* URLKeywordMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLKeywordMonitor.swift; sourceTree = "<group>"; };
 		4BFAC5A62AD2DFD8C2E25805 /* ModeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeEngine.swift; sourceTree = "<group>"; };
 		528581BA062D7BF8D2EBA448 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		649F78881963B7D591BE9F6C /* BrowserHistoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserHistoryService.swift; sourceTree = "<group>"; };
@@ -203,6 +205,7 @@
 				B4BF2DF8A009DBD56BB63442 /* LocationService.swift */,
 				E61F9FDD61FBFEA0089258EC /* NotificationService.swift */,
 				7F3A1A8784878ED72F107800 /* PresentationDetector.swift */,
+				48B495AEA30E5E9A5DEF8048 /* URLKeywordMonitor.swift */,
 				EF0F4D86E354EEDDCE99995D /* WakeDetector.swift */,
 				30FB8716639E82E5B121D348 /* XPCClient.swift */,
 			);
@@ -418,6 +421,7 @@
 				306F9889A94B65A90FA3A6C5 /* StayCellApp.swift in Sources */,
 				C98CD3EB76A0CB245BC1EE4F /* StayCellError.swift in Sources */,
 				A6BDBBB7CD9521F6FC7CF333 /* TimerEngine.swift in Sources */,
+				51ECE12B2AC0B89D4F33E4FD /* URLKeywordMonitor.swift in Sources */,
 				26B3EA69DE063A8C7C8F46C3 /* WakeDetector.swift in Sources */,
 				ABC30F969B3EFCC60C34B1BA /* WeeklyStatsView.swift in Sources */,
 				3D7D8DEFC68E0471EB5B1A1D /* XPCClient.swift in Sources */,

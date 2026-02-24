@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import os.log
 
@@ -15,7 +16,8 @@ final class SleepEngine {
 
     private(set) var sleepPhase: SleepPhase = .normal
     private(set) var bedtime: Date?
-    private(set) var extensionUsed = false
+    /// Number of extensions granted tonight. 0 = none used, 1 = one used, etc.
+    private(set) var extensionCount = 0
 
     var onPhaseChanged: ((SleepPhase) -> Void)?
     var onShowBedtimeOverlay: (() -> Void)?
@@ -76,26 +78,51 @@ final class SleepEngine {
         transitionTo(.nuclear)
     }
 
-    /// User requests a 15 or 30 min extension.
+    /// User requests a bedtime extension.
+    /// - 1st extension: granted instantly.
+    /// - 2nd extension: requires typing a confirmation phrase.
+    /// - 3rd+: denied silently.
     func requestExtension(minutes: Int) -> Bool {
-        guard !extensionUsed else {
-            logger.info("Extension already used tonight")
+        switch extensionCount {
+        case 0:
+            grantExtension(minutes: minutes)
+            return true
+        case 1:
+            let phrase = OverridePhrases.pool[extensionCount % OverridePhrases.pool.count]
+            let alert = NSAlert()
+            alert.messageText = "Second Extension"
+            alert.informativeText = "Type the phrase below to get \(minutes) more minutes:\n\n\"\(phrase)\""
+            alert.addButton(withTitle: "Grant")
+            alert.addButton(withTitle: "Cancel")
+            let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+            alert.accessoryView = textField
+            NSApp.activate(ignoringOtherApps: true)
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn && textField.stringValue == phrase {
+                grantExtension(minutes: minutes)
+                return true
+            }
+            logger.info("Second extension declined (phrase mismatch or cancelled)")
+            return false
+        default:
+            logger.info("Extension denied — already used \(self.extensionCount) tonight")
             return false
         }
+    }
 
-        extensionUsed = true
+    private func grantExtension(minutes: Int) {
+        extensionCount += 1
         let newBedtime = Date().addingTimeInterval(Double(minutes) * 60)
         bedtime = newBedtime
         transitionTo(.normal)
         scheduleWindDown(bedtime: newBedtime)
-        logger.info("Extension granted: \(minutes) min, new bedtime: \(newBedtime)")
-        return true
+        logger.info("Extension \(self.extensionCount) granted: \(minutes) min, new bedtime: \(newBedtime)")
     }
 
     /// Reset for a new day.
     func reset() {
         sleepPhase = .normal
-        extensionUsed = false
+        extensionCount = 0
         bedtime = nil
         windDownTimer?.cancel()
         windDownTimer = nil
@@ -105,6 +132,14 @@ final class SleepEngine {
     // MARK: - Phase Transitions
 
     private func transitionTo(_ phase: SleepPhase) {
+        // Check for active calls before enforcing offline at any wind-down phase.
+        // Do this before updating sleepPhase so a deferred retry can still transition.
+        if (phase == .windDown60 || phase == .bedtime) && audioMonitor.isAudioActive {
+            logger.info("Active call detected at \(phase.rawValue) — deferring 10 min")
+            waitForCallToEnd(thenTransitionTo: phase)
+            return
+        }
+
         guard phase != sleepPhase else { return }
         let previousPhase = sleepPhase
         sleepPhase = phase
@@ -128,10 +163,10 @@ final class SleepEngine {
             setBrightness(0.7)
 
         case .windDown15:
-            // -15 min: "Close your sessions"
+            // -15 min: "Close your sessions" (call check already handled above for windDown60/bedtime)
             if audioMonitor.isAudioActive {
                 logger.info("Active call detected — delaying sleep enforcement")
-                waitForCallToEnd()
+                waitForCallToEnd(thenTransitionTo: .windDown15)
                 return
             }
             notificationService.sendCloseSessionsNotification()
@@ -196,12 +231,12 @@ final class SleepEngine {
         }
     }
 
-    private func waitForCallToEnd() {
+    private func waitForCallToEnd(thenTransitionTo phase: SleepPhase) {
         audioMonitor.onAudioStateChanged = { [weak self] active in
             guard let self, !active else { return }
             // Call ended — resume sleep enforcement after 10 min grace
             DispatchQueue.main.asyncAfter(deadline: .now() + 600) { [weak self] in
-                self?.transitionTo(.windDown15)
+                self?.transitionTo(phase)
             }
         }
     }
