@@ -9,21 +9,29 @@
 /* Begin PBXBuildFile section */
 		00DF7F3AB0EF8DC2F96A5C66 /* HostsFileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94501653D77AD901A6618B61 /* HostsFileManager.swift */; };
 		14107FA2AD9B512BB5CA8013 /* XPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47E08F1CC86D3A261B50872C /* XPCProtocol.swift */; };
+		18E1CDB44E329A99EFE7EC97 /* WakeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DD305B6D9F993163A578C2F /* WakeDetector.swift */; };
+		23119C4EC11D1438E70762BA /* ModeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4A4DD304A9A43F1F37FB1 /* ModeEngine.swift */; };
+		2E1FCC77F8C171333677BDB8 /* SolarCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B7131F6335654FFF3DB1A7 /* SolarCalculator.swift */; };
+		3E023858424C1FF83F4FFE4F /* TimerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DFDCDCD6DDA6C92BC69F023 /* TimerEngine.swift */; };
 		56F2D08A7854FE86B5F22C8C /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A95B6C1EF99D079BC4745C68 /* GRDB */; };
 		59146943663A0DD806F16888 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F582C39671FCD0DFE7D3860 /* main.swift */; };
 		66091E93CE0D905275E91B56 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BE1B7E8ECF5271132E33BE /* AppState.swift */; };
 		6BF1E42CF100ACE553C2447C /* SharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95758A52902000061A600BFC /* SharedConstants.swift */; };
 		6E7836201D3318C149A00A8C /* FocusError.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA23A2E6FD2028D5F3FB513 /* FocusError.swift */; };
+		703598491A25D1AB5587F5C2 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 613D1E96FD012CD67E3740E0 /* NotificationService.swift */; };
 		844D4102C8820659E4947C45 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1D35FFEADB21BACCED9B79 /* MenuBarManager.swift */; };
 		86DFF87A5D28866E5279A3E6 /* MenuBarPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B7E152BC26931113349139 /* MenuBarPopover.swift */; };
 		88BA0ED7B12BD02C035AEAF8 /* BlockingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C39D070E7343D478F2DFE66 /* BlockingEngine.swift */; };
 		9B436F1110C57798AA5270EB /* FocusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A388CE6ABAEDA053B3E3C23A /* FocusApp.swift */; };
+		9C4447722FA0DCF98A51DAC5 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8903DFBFE91E572BABEA2C40 /* Session.swift */; };
 		9F671A250BDFCD91AEC010AB /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28A19E941C87187744B8A079 /* Constants.swift */; };
 		A970072917D97D379F751E32 /* BlockingRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E77BB56AE5F650A59B7406FD /* BlockingRulesTests.swift */; };
 		B1C99AD2B3D7B0C5E34195EA /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7505453BEB8DD9672579890 /* OnboardingView.swift */; };
 		C0E251390EDEED4A5FC74A8C /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10039B928AE201B3C3E6824E /* Database.swift */; };
+		C638D14AEF518E7E7D483855 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2048AEAB7AB0E195D3261EC0 /* LocationService.swift */; };
 		D2A5C5E6E3721B4CB397B232 /* HostsFileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD33852147DF292E803C2A91 /* HostsFileWatcher.swift */; };
 		D694A695AEE8C5CF3B2017BB /* XPCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52EF3E7E65E26990644E8D18 /* XPCClient.swift */; };
+		F7AE10C10417451899FE1C88 /* ScheduleEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C427779EBE0B76329B6027D /* ScheduleEngine.swift */; };
 		FA0BE4D5B6CA4924F5972CA1 /* XPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47E08F1CC86D3A261B50872C /* XPCProtocol.swift */; };
 		FACE1F1BC80966AF586B8813 /* SharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95758A52902000061A600BFC /* SharedConstants.swift */; };
 		FF14896B287A76BE8C317D97 /* FocusMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 833CF29B883A2FB98E93CD11 /* FocusMode.swift */; };
@@ -43,14 +51,21 @@
 		01B7E152BC26931113349139 /* MenuBarPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopover.swift; sourceTree = "<group>"; };
 		05B64F3F99390599B394963D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		10039B928AE201B3C3E6824E /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
+		1DD305B6D9F993163A578C2F /* WakeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeDetector.swift; sourceTree = "<group>"; };
+		2048AEAB7AB0E195D3261EC0 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		28A19E941C87187744B8A079 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		3C427779EBE0B76329B6027D /* ScheduleEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEngine.swift; sourceTree = "<group>"; };
 		3F582C39671FCD0DFE7D3860 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		47E08F1CC86D3A261B50872C /* XPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCProtocol.swift; sourceTree = "<group>"; };
 		4C39D070E7343D478F2DFE66 /* BlockingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockingEngine.swift; sourceTree = "<group>"; };
+		4DFDCDCD6DDA6C92BC69F023 /* TimerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerEngine.swift; sourceTree = "<group>"; };
 		518695297D7BAE60F854EF81 /* Focus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Focus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52EF3E7E65E26990644E8D18 /* XPCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPCClient.swift; sourceTree = "<group>"; };
+		613D1E96FD012CD67E3740E0 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		77BE1B7E8ECF5271132E33BE /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		833CF29B883A2FB98E93CD11 /* FocusMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusMode.swift; sourceTree = "<group>"; };
+		84B7131F6335654FFF3DB1A7 /* SolarCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolarCalculator.swift; sourceTree = "<group>"; };
+		8903DFBFE91E572BABEA2C40 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		94501653D77AD901A6618B61 /* HostsFileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostsFileManager.swift; sourceTree = "<group>"; };
 		95758A52902000061A600BFC /* SharedConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedConstants.swift; sourceTree = "<group>"; };
 		A388CE6ABAEDA053B3E3C23A /* FocusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusApp.swift; sourceTree = "<group>"; };
@@ -63,6 +78,7 @@
 		DA1D35FFEADB21BACCED9B79 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
 		E7505453BEB8DD9672579890 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		E77BB56AE5F650A59B7406FD /* BlockingRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockingRulesTests.swift; sourceTree = "<group>"; };
+		EAE4A4DD304A9A43F1F37FB1 /* ModeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				833CF29B883A2FB98E93CD11 /* FocusMode.swift */,
+				8903DFBFE91E572BABEA2C40 /* Session.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -130,6 +147,9 @@
 			children = (
 				77BE1B7E8ECF5271132E33BE /* AppState.swift */,
 				4C39D070E7343D478F2DFE66 /* BlockingEngine.swift */,
+				EAE4A4DD304A9A43F1F37FB1 /* ModeEngine.swift */,
+				3C427779EBE0B76329B6027D /* ScheduleEngine.swift */,
+				4DFDCDCD6DDA6C92BC69F023 /* TimerEngine.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -148,6 +168,9 @@
 			isa = PBXGroup;
 			children = (
 				AD33852147DF292E803C2A91 /* HostsFileWatcher.swift */,
+				2048AEAB7AB0E195D3261EC0 /* LocationService.swift */,
+				613D1E96FD012CD67E3740E0 /* NotificationService.swift */,
+				1DD305B6D9F993163A578C2F /* WakeDetector.swift */,
 				52EF3E7E65E26990644E8D18 /* XPCClient.swift */,
 			);
 			path = Services;
@@ -166,6 +189,7 @@
 				28A19E941C87187744B8A079 /* Constants.swift */,
 				10039B928AE201B3C3E6824E /* Database.swift */,
 				ABA23A2E6FD2028D5F3FB513 /* FocusError.swift */,
+				84B7131F6335654FFF3DB1A7 /* SolarCalculator.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -308,10 +332,18 @@
 				6E7836201D3318C149A00A8C /* FocusError.swift in Sources */,
 				FF14896B287A76BE8C317D97 /* FocusMode.swift in Sources */,
 				D2A5C5E6E3721B4CB397B232 /* HostsFileWatcher.swift in Sources */,
+				C638D14AEF518E7E7D483855 /* LocationService.swift in Sources */,
 				844D4102C8820659E4947C45 /* MenuBarManager.swift in Sources */,
 				86DFF87A5D28866E5279A3E6 /* MenuBarPopover.swift in Sources */,
+				23119C4EC11D1438E70762BA /* ModeEngine.swift in Sources */,
+				703598491A25D1AB5587F5C2 /* NotificationService.swift in Sources */,
 				B1C99AD2B3D7B0C5E34195EA /* OnboardingView.swift in Sources */,
+				F7AE10C10417451899FE1C88 /* ScheduleEngine.swift in Sources */,
+				9C4447722FA0DCF98A51DAC5 /* Session.swift in Sources */,
 				6BF1E42CF100ACE553C2447C /* SharedConstants.swift in Sources */,
+				2E1FCC77F8C171333677BDB8 /* SolarCalculator.swift in Sources */,
+				3E023858424C1FF83F4FFE4F /* TimerEngine.swift in Sources */,
+				18E1CDB44E329A99EFE7EC97 /* WakeDetector.swift in Sources */,
 				D694A695AEE8C5CF3B2017BB /* XPCClient.swift in Sources */,
 				14107FA2AD9B512BB5CA8013 /* XPCProtocol.swift in Sources */,
 			);

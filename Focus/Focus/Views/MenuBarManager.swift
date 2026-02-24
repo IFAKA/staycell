@@ -9,12 +9,12 @@ final class MenuBarManager: NSObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private let appState: AppState
-    private let blockingEngine: BlockingEngine
     private let logger = Logger.app
 
-    init(appState: AppState, blockingEngine: BlockingEngine) {
+    weak var modeEngine: ModeEngine?
+
+    init(appState: AppState) {
         self.appState = appState
-        self.blockingEngine = blockingEngine
         super.init()
     }
 
@@ -24,18 +24,21 @@ final class MenuBarManager: NSObject {
 
         updateStatusItemDisplay()
 
-        let popover = NSPopover()
-        popover.contentSize = NSSize(width: 280, height: 320)
-        popover.behavior = .transient
-        popover.contentViewController = NSHostingController(
-            rootView: MenuBarPopover(appState: appState, blockingEngine: blockingEngine)
-        )
-        self.popover = popover
-
         if let button = statusItem.button {
             button.action = #selector(togglePopover(_:))
             button.target = self
         }
+    }
+
+    func setupPopover(modeEngine: ModeEngine) {
+        self.modeEngine = modeEngine
+        let popover = NSPopover()
+        popover.contentSize = NSSize(width: 280, height: 420)
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(
+            rootView: MenuBarPopover(appState: appState, modeEngine: modeEngine)
+        )
+        self.popover = popover
     }
 
     func updateStatusItemDisplay() {
@@ -61,8 +64,15 @@ final class MenuBarManager: NSObject {
         )
         attributed.append(dot)
 
+        // Mode label + timer (minute-level in menubar)
+        var labelText = mode.shortName
+        if appState.timerIsRunning && appState.timerRemainingSeconds > 0 {
+            let minutes = appState.timerRemainingSeconds / 60
+            labelText += " \(minutes)m"
+        }
+
         let label = NSAttributedString(
-            string: mode.shortName,
+            string: labelText,
             attributes: [
                 .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .medium),
             ]

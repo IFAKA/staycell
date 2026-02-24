@@ -31,6 +31,20 @@ enum DatabaseManager {
             }
         }
 
+        migrator.registerMigration("v2_sessions") { db in
+            try db.create(table: "sessions") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("mode", .text).notNull()
+                t.column("intention", .text)
+                t.column("startedAt", .datetime).notNull()
+                t.column("endedAt", .datetime)
+                t.column("plannedDurationSeconds", .integer).notNull()
+                t.column("actualDurationSeconds", .integer)
+                t.column("completed", .boolean).notNull().defaults(to: false)
+                t.column("abandoned", .boolean).notNull().defaults(to: false)
+            }
+        }
+
         try migrator.migrate(dbPool)
         logger.info("Database opened at \(databasePath)")
         return dbPool

@@ -1,5 +1,6 @@
 import SwiftUI
 import ServiceManagement
+import GRDB
 import os.log
 
 @main
@@ -19,6 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var blockingEngine: BlockingEngine!
     private var menuBarManager: MenuBarManager!
     private var hostsWatcher: HostsFileWatcher!
+    private var timerEngine: TimerEngine!
+    private var modeEngine: ModeEngine!
+    private var scheduleEngine: ScheduleEngine!
+    private var wakeDetector: WakeDetector!
+    private var locationService: LocationService!
+    private var notificationService: NotificationService!
+    private var dbPool: DatabasePool?
     private var onboardingWindow: NSWindow?
     private let logger = Logger.app
 
@@ -26,10 +34,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("Focus app launching")
 
-        // Initialize core services
+        // Initialize core state
         appState = AppState()
+
+        // Initialize database
+        do {
+            dbPool = try DatabaseManager.openDatabase()
+        } catch {
+            logger.error("Failed to open database: \(error.localizedDescription)")
+        }
+
+        // Initialize services
         xpcClient = XPCClient()
         blockingEngine = BlockingEngine(xpcClient: xpcClient)
+        timerEngine = TimerEngine()
+        notificationService = NotificationService()
+        notificationService.requestPermission()
+
+        // Initialize engines
+        modeEngine = ModeEngine(
+            timerEngine: timerEngine,
+            blockingEngine: blockingEngine,
+            notificationService: notificationService,
+            appState: appState
+        )
+        if let dbPool {
+            modeEngine.setDatabase(dbPool)
+        }
+
+        scheduleEngine = ScheduleEngine()
+        wakeDetector = WakeDetector()
+        locationService = LocationService()
 
         // Handle dirty shutdown
         if appState.isDirtyShutdown {
@@ -40,9 +75,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
         appState.setDirtyFlag()
 
+        // Recover timer if crashed mid-session
+        if timerEngine.recoverIfNeeded() {
+            appState.timerIsRunning = true
+            logger.info("Recovered active timer session")
+        }
+
         // Set up menubar
-        menuBarManager = MenuBarManager(appState: appState, blockingEngine: blockingEngine)
+        menuBarManager = MenuBarManager(appState: appState)
         menuBarManager.setup()
+        menuBarManager.setupPopover(modeEngine: modeEngine)
 
         // Set up hosts file watcher
         hostsWatcher = HostsFileWatcher()
@@ -53,37 +95,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
         hostsWatcher.startWatching()
 
+        // Wire timer updates to UI
+        setupTimerUIUpdates()
+
+        // Wire mode changes to menubar
+        modeEngine.onModeChanged = { [weak self] _ in
+            self?.menuBarManager.updateStatusItemDisplay()
+        }
+
+        // Set up wake detection and schedule
+        setupScheduleSystem()
+
         // Register as login item
         registerLoginItem()
+
+        // Request location for solar calculations
+        locationService.requestLocation()
 
         // Check if onboarding needed
         if !appState.isOnboardingComplete {
             showOnboarding()
         } else {
-            // Apply current mode's blocking rules
-            Task {
-                do {
-                    try await blockingEngine.applyMode(appState.currentMode)
-                } catch let error as FocusError {
-                    appState.setError(error)
-                } catch {
-                    appState.setError(.xpcConnectionFailed(underlying: error.localizedDescription))
-                }
-            }
-        }
-
-        // Observe mode changes to update menubar
-        Task { @MainActor in
-            // Use a simple polling approach for @Observable changes
-            // (withObservationTracking is the proper way but requires careful setup)
-            var lastMode = appState.currentMode
-            while true {
-                try? await Task.sleep(for: .seconds(1))
-                if appState.currentMode != lastMode {
-                    lastMode = appState.currentMode
-                    menuBarManager.updateStatusItemDisplay()
-                }
-            }
+            applyCurrentMode()
         }
     }
 
@@ -91,29 +124,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         Task { @MainActor in
             appState.clearDirtyFlag()
             hostsWatcher.stopWatching()
+            wakeDetector.stopMonitoring()
             xpcClient.disconnect()
             logger.info("Focus app terminating cleanly")
         }
     }
 
-    // MARK: - Private
+    // MARK: - Timer → UI Bridge
+
+    @MainActor
+    private func setupTimerUIUpdates() {
+        timerEngine.onTick = { [weak self] remaining in
+            guard let self else { return }
+            self.appState.timerRemainingSeconds = remaining
+            self.appState.timerIsRunning = self.timerEngine.isRunning
+
+            // Update menubar every minute (not every second)
+            if remaining % 60 == 0 {
+                self.menuBarManager.updateStatusItemDisplay()
+            }
+        }
+
+        // When timer completes
+        let originalOnComplete = timerEngine.onComplete
+        timerEngine.onComplete = { [weak self] in
+            self?.appState.timerIsRunning = false
+            self?.appState.timerRemainingSeconds = 0
+            self?.appState.sessionsCompletedToday = self?.modeEngine.sessionCount ?? 0
+            self?.menuBarManager.updateStatusItemDisplay()
+            originalOnComplete?()
+        }
+    }
+
+    // MARK: - Schedule System
+
+    @MainActor
+    private func setupScheduleSystem() {
+        wakeDetector.onDayAnchorSet = { [weak self] anchor in
+            guard let self else { return }
+            self.scheduleEngine.generateSchedule(
+                anchor: anchor,
+                appState: self.appState,
+                solarNoon: self.locationService.solarTimes?.solarNoon
+            )
+            self.logger.info("Schedule generated from anchor: \(anchor)")
+        }
+
+        locationService.onSolarTimesUpdated = { [weak self] times in
+            guard let self else { return }
+            self.notificationService.scheduleSolarPrayers(solarTimes: times)
+
+            // Regenerate schedule with solar noon
+            if let anchor = self.wakeDetector.dayAnchor {
+                self.scheduleEngine.generateSchedule(
+                    anchor: anchor,
+                    appState: self.appState,
+                    solarNoon: times.solarNoon
+                )
+            }
+        }
+
+        wakeDetector.startMonitoring()
+    }
+
+    // MARK: - Helpers
 
     @MainActor
     private func showOnboarding() {
         let onboardingView = OnboardingView(appState: appState) { [weak self] in
             self?.onboardingWindow?.close()
             self?.onboardingWindow = nil
-            // Apply initial blocking
-            Task { [weak self] in
-                guard let self else { return }
-                do {
-                    try await self.blockingEngine.applyMode(self.appState.currentMode)
-                } catch let error as FocusError {
-                    self.appState.setError(error)
-                } catch {
-                    self.appState.setError(.xpcConnectionFailed(underlying: error.localizedDescription))
-                }
-            }
+            self?.applyCurrentMode()
         }
 
         let window = NSWindow(
@@ -132,8 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     }
 
     @MainActor
-    private func handleHostsTamper() {
-        logger.warning("Hosts file tamper detected, restoring blocking rules")
+    private func applyCurrentMode() {
         Task {
             do {
                 try await blockingEngine.applyMode(appState.currentMode)
@@ -143,6 +223,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
                 appState.setError(.xpcConnectionFailed(underlying: error.localizedDescription))
             }
         }
+    }
+
+    @MainActor
+    private func handleHostsTamper() {
+        logger.warning("Hosts file tamper detected, restoring blocking rules")
+        applyCurrentMode()
     }
 
     private func registerLoginItem() {

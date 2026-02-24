@@ -23,6 +23,13 @@ final class AppState {
     var lastError: FocusError?
     var hasError: Bool { lastError != nil }
 
+    // MARK: - Timer State
+
+    var timerRemainingSeconds: Int = 0
+    var timerIsRunning: Bool = false
+    var currentSessionIntention: String?
+    var sessionsCompletedToday: Int = 0
+
     // MARK: - Day Schedule
 
     var workdayStartHour: Int {
