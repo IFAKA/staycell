@@ -72,6 +72,17 @@ enum DatabaseManager {
             }
         }
 
+        migrator.registerMigration("v5_fire") { db in
+            try db.create(table: "fire_snapshots") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("date", .text).notNull().unique()
+                t.column("monthlyIncome", .double).notNull()
+                t.column("monthlyExpenses", .double).notNull()
+                t.column("totalInvested", .double).notNull()
+                t.column("totalNetWorth", .double).notNull()
+            }
+        }
+
         try migrator.migrate(dbPool)
         logger.info("Database opened at \(databasePath)")
         return dbPool
