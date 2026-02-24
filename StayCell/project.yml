@@ -1,0 +1,80 @@
+name: StayCell
+options:
+  bundleIdPrefix: com.staycell
+  deploymentTarget:
+    macOS: "15.0"
+  xcodeVersion: "16.2"
+  generateEmptyDirectories: true
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: "7.4.1"
+
+targets:
+  StayCell:
+    type: application
+    platform: macOS
+    sources:
+      - StayCell
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.staycell.app
+        INFOPLIST_FILE: StayCell/Info.plist
+        CODE_SIGN_ENTITLEMENTS: StayCell/StayCell.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: "NO"
+        ENABLE_APP_SANDBOX: "NO"
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        SWIFT_STRICT_CONCURRENCY: complete
+    dependencies:
+      - package: GRDB
+    entitlements:
+      path: StayCell/StayCell.entitlements
+
+  StayCellHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - StayCellHelper
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.staycell.helper
+        INFOPLIST_FILE: StayCellHelper/Info.plist
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: "NO"
+        SWIFT_STRICT_CONCURRENCY: complete
+        INSTALL_PATH: /Library/PrivilegedHelperTools
+
+  StayCellTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.staycell.tests
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: StayCell
+
+schemes:
+  StayCell:
+    build:
+      targets:
+        StayCell: all
+        StayCellHelper: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - StayCellTests

@@ -1,4 +1,4 @@
-# Focus
+# StayCell
 
 A distraction-blocking app for macOS. Blocks websites when you're working, times your deep work sessions, tracks your financial independence progress, and enforces bedtime.
 
@@ -11,35 +11,35 @@ Lives in your menu bar. No account needed. All data stays on your Mac.
 
 ## Install
 
-Focus is not signed with an Apple Developer certificate. You'll need to build it yourself.
+StayCell is not signed with an Apple Developer certificate. You'll need to build it yourself.
 
 ### 1. Build the app
 
 ```bash
-cd Focus
+cd StayCell
 xcodegen generate       # generates the Xcode project
 ```
 
-Open `Focus/Focus.xcodeproj` in Xcode, select the **Focus** scheme, and press **Cmd+R** to build and run.
+Open `StayCell/StayCell.xcodeproj` in Xcode, select the **StayCell** scheme, and press **Cmd+R** to build and run.
 
 Or build from the terminal:
 
 ```bash
-xcodebuild -scheme Focus -configuration Release build
+xcodebuild -scheme StayCell -configuration Release build
 ```
 
-The built app will be in `~/Library/Developer/Xcode/DerivedData/Focus-*/Build/Products/Release/Focus.app`. Copy it to `/Applications/`.
+The built app will be in `~/Library/Developer/Xcode/DerivedData/StayCell-*/Build/Products/Release/StayCell.app`. Copy it to `/Applications/`.
 
 ### 2. First launch — Gatekeeper warning
 
-Because Focus is unsigned, macOS will block it on first launch:
+Because StayCell is unsigned, macOS will block it on first launch:
 
-1. Double-click Focus.app — you'll see "Focus can't be opened because it is from an unidentified developer"
+1. Double-click StayCell.app — you'll see "StayCell can't be opened because it is from an unidentified developer"
 2. Open **System Settings → Privacy & Security**
-3. Scroll down — you'll see "Focus was blocked from use because it is not from an identified developer"
+3. Scroll down — you'll see "StayCell was blocked from use because it is not from an identified developer"
 4. Click **Open Anyway**
 5. Enter your password
-6. Focus will launch and the onboarding wizard will start
+6. StayCell will launch and the onboarding wizard will start
 
 You only need to do this once.
 
@@ -47,8 +47,8 @@ You only need to do this once.
 
 The app walks you through setup:
 
-1. **Welcome** — explains what Focus does
-2. **Install Helper** — Focus needs a background service to manage website blocking. You'll enter your Mac password once — Focus never asks again
+1. **Welcome** — explains what StayCell does
+2. **Install Helper** — StayCell needs a background service to manage website blocking. You'll enter your Mac password once — StayCell never asks again
 3. **Browser DNS Check** — checks if your browser has "Secure DNS" enabled (this bypasses blocking). If it does, step-by-step instructions show you how to turn it off
 4. **Location** — optional. Used to calculate sunrise/sunset for prayer time notifications and automatic bedtime. Skip if you don't want this
 5. **Schedule** — set your work start time and work days
@@ -59,7 +59,7 @@ After setup, look for the colored dot in your menu bar (top-right corner of your
 
 ### Modes
 
-Focus has four modes. Click the menu bar icon to switch between them:
+StayCell has four modes. Click the menu bar icon to switch between them:
 
 | Mode | What's blocked | When to use |
 |------|---------------|-------------|
@@ -74,7 +74,7 @@ Blocked websites show a "cannot connect" error in your browser. This is normal �
 
 Click the menu bar icon → **Deep Work** to start a 90-minute session. You'll be asked what you're working on (optional). The timer appears in your menu bar.
 
-When the session ends, Focus automatically starts a 15-minute break. After the break, you choose when to start the next session.
+When the session ends, StayCell automatically starts a 15-minute break. After the break, you choose when to start the next session.
 
 ### Override gate
 
@@ -84,7 +84,7 @@ The app is designed to make distraction inconvenient, not impossible.
 
 ### Sleep enforcement
 
-At night, Focus progressively:
+At night, StayCell progressively:
 - 60 min before bedtime: tightens blocking to Offline rules
 - 30 min before: dims your screen
 - At bedtime: full Offline mode, screen dimmed further
@@ -94,7 +94,7 @@ Bedtime = the earlier of (wake time + 16 hours) or 1:00 AM.
 
 ### FIRE tracker
 
-Dashboard → FIRE tab. Enter monthly income, expenses, invested amount, and net worth. Focus calculates your savings rate, FIRE number (25x annual expenses), months to FIRE, and Coast FIRE number.
+Dashboard → FIRE tab. Enter monthly income, expenses, invested amount, and net worth. StayCell calculates your savings rate, FIRE number (25x annual expenses), months to FIRE, and Coast FIRE number.
 
 ### Keyboard shortcuts
 
@@ -111,7 +111,7 @@ Dashboard → Settings → Export All Data (JSON). Exports all sessions, overrid
 
 ## What's missing
 
-Focus implements the blocking and structure layers of the system it was designed around. Several planned features are not built yet:
+StayCell implements the blocking and structure layers of the system it was designed around. Several planned features are not built yet:
 
 ### Not yet implemented
 
@@ -139,7 +139,7 @@ Focus implements the blocking and structure layers of the system it was designed
 
 1. **Browser DNS bypass**: If your browser uses DNS-over-HTTPS (Secure DNS), website blocking won't work. The onboarding wizard checks for this and tells you how to fix it, but you have to do it manually.
 
-2. **VPN bypass**: If you use a VPN, DNS requests go through the VPN and bypass /etc/hosts blocking. Focus can't prevent this without a Network Extension (which requires an Apple Developer account). Focus is a commitment device, not a security tool.
+2. **VPN bypass**: If you use a VPN, DNS requests go through the VPN and bypass /etc/hosts blocking. StayCell can't prevent this without a Network Extension (which requires an Apple Developer account). StayCell is a commitment device, not a security tool.
 
 3. **Only works on Mac**: No phone app. Your phone is a separate problem.
 
@@ -149,34 +149,34 @@ Focus implements the blocking and structure layers of the system it was designed
 
 ## Uninstall
 
-Dashboard → Settings → **Uninstall Focus Completely**.
+Dashboard → Settings → **Uninstall StayCell Completely**.
 
 This removes:
-- The Focus helper daemon
+- The StayCell helper daemon
 - Restores your original /etc/hosts file
 - Deletes all app data (database, logs, preferences)
-- Removes Focus from login items
+- Removes StayCell from login items
 
-Then drag Focus.app to the Trash.
+Then drag StayCell.app to the Trash.
 
-Focus stores data in exactly these locations:
-- `~/Library/Application Support/Focus/` (database)
-- `~/Library/Logs/Focus/` (logs)
-- `~/Library/Preferences/com.focus.app.plist` (preferences)
-- `/Library/LaunchDaemons/com.focus.helper.plist` (daemon config)
-- `/Library/PrivilegedHelperTools/com.focus.helper` (daemon binary)
+StayCell stores data in exactly these locations:
+- `~/Library/Application Support/StayCell/` (database)
+- `~/Library/Logs/StayCell/` (logs)
+- `~/Library/Preferences/com.staycell.app.plist` (preferences)
+- `/Library/LaunchDaemons/com.staycell.helper.plist` (daemon config)
+- `/Library/PrivilegedHelperTools/com.staycell.helper` (daemon binary)
 
 ## Project structure
 
 ```
-Focus/
-├── Focus/           App target (menubar + SwiftUI dashboard)
+StayCell/
+├── StayCell/        App target (menubar + SwiftUI dashboard)
 │   ├── Core/        AppState, ModeEngine, TimerEngine, BlockingEngine, ScheduleEngine, SleepEngine
-│   ├── Models/      GRDB records: Session, Override, DailyStats, FIRESnapshot, FocusMode
+│   ├── Models/      GRDB records: Session, Override, DailyStats, FIRESnapshot, Mode
 │   ├── Views/       MenuBar, Dashboard, Interception overlay, Onboarding, Settings
 │   ├── Services/    XPC client, file watcher, wake detector, location, audio, shortcuts
 │   └── Utilities/   Constants, Database, FIRE calculator, Solar calculator, Error types
-├── FocusHelper/     LaunchDaemon target (runs as root, manages /etc/hosts)
+├── StayCellHelper/  LaunchDaemon target (runs as root, manages /etc/hosts)
 ├── Shared/          Code shared between app and daemon (XPC protocol, constants)
 └── Tests/           Unit tests
 ```
