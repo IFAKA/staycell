@@ -1,0 +1,24 @@
+# Xcode
+DerivedData/
+*.xcuserdata/
+xcuserdata/
+
+# Build artifacts
+Focus/build/
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# IDE
+.idea/
+*.code-workspace
+
+# Claude
+.claude/
