@@ -45,6 +45,20 @@ enum DatabaseManager {
             }
         }
 
+        migrator.registerMigration("v3_overrides") { db in
+            try db.create(table: "overrides") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("attemptedAt", .datetime).notNull()
+                t.column("mode", .text).notNull()
+                t.column("overrideLevel", .integer).notNull()
+                t.column("granted", .boolean).notNull().defaults(to: false)
+                t.column("cancelled", .boolean).notNull().defaults(to: false)
+                t.column("phraseUsed", .text).notNull()
+                t.column("typingDurationSeconds", .integer)
+                t.column("sessionIntention", .text)
+            }
+        }
+
         try migrator.migrate(dbPool)
         logger.info("Database opened at \(databasePath)")
         return dbPool

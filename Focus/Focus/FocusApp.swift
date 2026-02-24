@@ -26,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var wakeDetector: WakeDetector!
     private var locationService: LocationService!
     private var notificationService: NotificationService!
+    private var interceptionManager: InterceptionWindowManager!
+    private var overrideWindow: NSWindow?
     private var dbPool: DatabasePool?
     private var onboardingWindow: NSWindow?
     private let logger = Logger.app
@@ -60,6 +62,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         )
         if let dbPool {
             modeEngine.setDatabase(dbPool)
+        }
+
+        // Initialize interception overlay
+        interceptionManager = InterceptionWindowManager()
+        interceptionManager.onOverrideRequested = { [weak self] in
+            self?.showOverrideGate()
         }
 
         scheduleEngine = ScheduleEngine()
@@ -229,6 +237,102 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private func handleHostsTamper() {
         logger.warning("Hosts file tamper detected, restoring blocking rules")
         applyCurrentMode()
+
+        // Show interception overlay if in a blocking mode
+        let mode = appState.currentMode
+        if !mode.blockedCategories.isEmpty && mode != .personalTime {
+            if !interceptionManager.isShowing {
+                interceptionManager.show()
+            }
+        }
+    }
+
+    @MainActor
+    private func showOverrideGate() {
+        let level = overrideLevelToday()
+
+        let gateView = OverrideGateView(
+            overrideLevel: level,
+            onGranted: { [weak self] in
+                self?.handleOverrideGranted(level: level)
+            },
+            onCancelled: { [weak self] in
+                self?.overrideWindow?.close()
+                self?.overrideWindow = nil
+                self?.logOverride(level: level, granted: false)
+            }
+        )
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        window.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 2)
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.center()
+        window.contentView = NSHostingView(rootView: gateView)
+        window.makeKeyAndOrderFront(nil)
+
+        overrideWindow = window
+    }
+
+    @MainActor
+    private func handleOverrideGranted(level: Int) {
+        overrideWindow?.close()
+        overrideWindow = nil
+        logOverride(level: level, granted: true)
+
+        // Temporarily switch to personal time for timed access
+        modeEngine.switchMode(to: .personalTime)
+
+        // Schedule re-block after timed access period
+        let accessMinutes = TimerDurations.overrideTimedAccessMinutes
+        logger.info("Override granted: \(accessMinutes) min timed access")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(accessMinutes * 60)) { [weak self] in
+            guard let self else { return }
+            // Only re-block if still in personal time (user might have changed mode)
+            if self.appState.currentMode == .personalTime {
+                self.modeEngine.switchMode(to: .deepWork)
+                self.logger.info("Timed override expired, returning to deep work")
+            }
+        }
+    }
+
+    @MainActor
+    private func overrideLevelToday() -> Int {
+        guard let dbPool else { return 1 }
+        do {
+            return try dbPool.read { db in
+                try Override.countToday(db: db) + 1
+            }
+        } catch {
+            return 1
+        }
+    }
+
+    @MainActor
+    private func logOverride(level: Int, granted: Bool) {
+        guard let dbPool else { return }
+        let phraseIndex = (Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0 + level) % OverridePhrases.pool.count
+        var override = Override.attempt(
+            mode: appState.currentMode,
+            level: level,
+            phrase: OverridePhrases.pool[phraseIndex],
+            intention: appState.currentSessionIntention
+        )
+        override.granted = granted
+        override.cancelled = !granted
+
+        do {
+            try dbPool.write { db in
+                try override.save(db)
+            }
+        } catch {
+            logger.error("Failed to log override: \(error.localizedDescription)")
+        }
     }
 
     private func registerLoginItem() {
