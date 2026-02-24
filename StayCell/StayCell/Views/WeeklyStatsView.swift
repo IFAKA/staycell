@@ -13,6 +13,7 @@ struct WeeklyStatsView: View {
     @State private var avgDeepWorkPerDay: Int = 0
     @State private var completionRate: Double = 0
     @State private var overridesByDay: [(day: String, count: Int)] = []
+    @State private var insights: BehaviorInsights?
 
     var body: some View {
         ScrollView {
@@ -28,6 +29,10 @@ struct WeeklyStatsView: View {
                     overrideChart
                     Divider()
                     dailyBreakdown
+                    if let insights, !insights.sentences.isEmpty {
+                        Divider()
+                        insightsSection(insights)
+                    }
                 } else {
                     Text("No data yet. Complete some sessions to see your weekly summary.")
                         .foregroundStyle(.secondary)
@@ -166,6 +171,31 @@ struct WeeklyStatsView: View {
         }
     }
 
+    // MARK: - Insights Section
+
+    @ViewBuilder
+    private func insightsSection(_ insights: BehaviorInsights) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Behavioral Patterns")
+                .font(.headline)
+            Text("Based on \(insights.totalOverrides) override attempts")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            ForEach(insights.sentences, id: \.self) { sentence in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("·")
+                        .foregroundStyle(.orange)
+                        .font(.body.weight(.bold))
+                    Text(sentence)
+                        .font(.callout)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
     // MARK: - Data Loading
 
     private func loadWeeklyData() {
@@ -192,6 +222,10 @@ struct WeeklyStatsView: View {
             completionRate = totalSessions > 0 ? Double(completed) / Double(totalSessions) * 100 : 0
 
             overridesByDay = weeklyStats.map { (shortDay($0.date), $0.overridesGranted) }
+
+            insights = try dbPool.read { db in
+                try BehaviorAnalyzer.loadInsights(db: db)
+            }
         } catch {
             // Silently fail
         }

@@ -83,6 +83,63 @@ enum DatabaseManager {
             }
         }
 
+        migrator.registerMigration("v6_override_context") { db in
+            try db.alter(table: "overrides") { t in
+                t.add(column: "minutesIntoSession", .integer)
+                t.add(column: "foregroundApp", .text)
+                t.add(column: "hourOfDay", .integer).notNull().defaults(to: 0)
+                t.add(column: "dayOfWeek", .integer).notNull().defaults(to: 0)
+                t.add(column: "appSwitchesLast10Min", .integer)
+                t.add(column: "timeSinceLastOverrideSecs", .integer)
+                t.add(column: "triggerCategory", .text)
+            }
+        }
+
+        migrator.registerMigration("v7_app_events") { db in
+            try db.create(table: "app_events") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("timestamp", .datetime).notNull()
+                t.column("appName", .text).notNull()
+                t.column("bundleId", .text)
+                t.column("sessionId", .integer)
+            }
+            try db.create(indexOn: "app_events", columns: ["timestamp"])
+        }
+
+        migrator.registerMigration("v8_override_url") { db in
+            try db.alter(table: "overrides") { t in
+                t.add(column: "foregroundURL", .text)
+                t.add(column: "foregroundDomain", .text)
+            }
+        }
+
+        migrator.registerMigration("v9_browsing_visits") { db in
+            try db.create(table: "browsing_visits") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("visitedAt", .datetime).notNull()
+                t.column("url", .text).notNull()
+                t.column("domain", .text).notNull()
+                t.column("title", .text)
+                t.column("durationSeconds", .integer).notNull().defaults(to: 0)
+                t.column("navIntent", .text).notNull().defaults(to: "link")
+                // "typed" | "link" | "search" | "reload" | "back_forward" | "other"
+                t.column("isNewTab", .boolean).notNull().defaults(to: false)
+                t.column("browser", .text).notNull()
+            }
+            try db.create(indexOn: "browsing_visits", columns: ["visitedAt"])
+            try db.create(indexOn: "browsing_visits", columns: ["domain"])
+        }
+
+        migrator.registerMigration("v10_override_browser_context") { db in
+            try db.alter(table: "overrides") { t in
+                t.add(column: "preOverrideNavIntent", .text)
+                t.add(column: "preOverrideReloadCount", .integer)
+                t.add(column: "preOverrideTabsOpened", .integer)
+                t.add(column: "preOverrideIdleSeconds", .integer)
+                t.add(column: "preOverrideBackNavRatio", .double)
+            }
+        }
+
         try migrator.migrate(dbPool)
         logger.info("Database opened at \(databasePath)")
         return dbPool

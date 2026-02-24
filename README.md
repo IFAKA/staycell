@@ -96,6 +96,35 @@ Bedtime = the earlier of (wake time + 16 hours) or 1:00 AM.
 
 Dashboard → FIRE tab. Enter monthly income, expenses, invested amount, and net worth. StayCell calculates your savings rate, FIRE number (25x annual expenses), months to FIRE, and Coast FIRE number.
 
+### Behavioral patterns
+
+Dashboard → Weekly tab → **Behavioral Patterns** section (appears after 7+ override attempts). StayCell infers why you reached for a blocked site:
+
+| Trigger | Signal |
+|---------|--------|
+| Fatigue | Override 45+ min into a session |
+| Autopilot | Override within 5 min, first attempt |
+| Avoidance | Override within 10 min on a hard task (bug, auth, deploy) |
+| Cascade | Two overrides within 30 minutes |
+| Analysis paralysis | 5+ app switches in the 10 minutes before the override |
+| Refresh anxiety | 3+ reloads of the same domain in the last 30 min |
+| Rabbit hole | >40% back/forward navigation on a social site in 15 min |
+| Zone-out | 90+ seconds of idle time before the override |
+| Noonday acedia | Override between 12–2 PM |
+| Late-night | Override after 10 PM |
+| Boredom | Long shallow-work session |
+
+### Browsing history
+
+Dashboard → **Browsing** tab. StayCell reads your browser's local history file once per day at launch (no extension, no permissions needed — it reads the SQLite database Brave/Chrome/Arc/Edge keeps in your own `~/Library`). Shows:
+
+- Top domains by time with a bar chart
+- **Intentionality score** per domain: what % of visits were typed directly vs. followed from a link. `github.com` at 68% typed = deliberate. `youtube.com` at 4% typed = algorithmic pull.
+- Navigation breakdown: % typed / link / reload / back-forward
+- Period picker: Today or This week
+
+The Weekly tab also shows cross-signal sentences when a domain is both your most browsed site and most common override trigger.
+
 ### Keyboard shortcuts
 
 | Shortcut | Action |
@@ -115,17 +144,11 @@ StayCell implements the blocking and structure layers of the system it was desig
 
 ### Not yet implemented
 
-- **The Companion**: The plan describes an on-device AI (Apple FoundationModels) that observes your behavioral patterns and speaks rarely but precisely — "Third attempt this afternoon. You're avoiding the auth refactor." Currently the interception screen is static. It shows the same Jesus Prayer every time regardless of context. The companion would make it personal.
+- **The Companion**: An on-device AI (Apple FoundationModels, macOS 26+) that observes behavioral patterns and speaks rarely but precisely — "Third attempt this afternoon. You're avoiding the auth refactor." Currently the interception screen is static. The trigger inference data is being collected; the companion would act on it.
 
-- **Trigger inference**: The plan describes capturing objective signals at every blocked-site attempt (time of day, minutes into session, foreground app, which site, override count) and inferring *why* you're distracted across 12 trigger categories (boredom, fatigue, avoidance, autopilot, acedia, analysis paralysis, etc.). None of this is implemented. Overrides are logged but not analyzed.
+- **Cascade detection across sessions**: Detecting rising pressure across consecutive sessions — if override attempts increase and a session was abandoned, proactively intervene before a full breakdown. Per-session override counts are logged; the cross-session trend is not yet surfaced.
 
-- **Browser extension**: A ~50-line Brave extension that tracks time per domain, tab switching patterns, and AI chatbot usage. Without it, the app only knows "user is in Brave" — not what you're actually doing. This is critical for detecting the analysis paralysis loop (AI chatbot → docs → AI chatbot → no code written).
-
-- **Cascade detection**: The plan describes detecting rising pressure across sessions — if override attempts increase across consecutive sessions and a session was abandoned, proactively intervene before a full breakdown. Currently overrides are counted but the trend is not tracked.
-
-- **Weekly review insights**: SQL correlations like "80% of reddit attempts happen 40-60 min into sessions" or "you override most when working on tasks described as 'bug fix'." The weekly stats view shows totals but no pattern analysis.
-
-- **90-day tracking**: The essay describes a ~90-day timeline for dopamine receptor recalibration. The app has no concept of "you've been doing this for X days" or progress toward that neurobiological milestone.
+- **90-day tracking**: The app has no concept of "you've been doing this for X days" or progress toward the ~90-day dopamine recalibration milestone described in the underlying framework.
 
 ### Cannot implement (structural gaps)
 
@@ -172,9 +195,9 @@ StayCell stores data in exactly these locations:
 StayCell/
 ├── StayCell/        App target (menubar + SwiftUI dashboard)
 │   ├── Core/        AppState, ModeEngine, TimerEngine, BlockingEngine, ScheduleEngine, SleepEngine
-│   ├── Models/      GRDB records: Session, Override, DailyStats, FIRESnapshot, Mode
-│   ├── Views/       MenuBar, Dashboard, Interception overlay, Onboarding, Settings
-│   ├── Services/    XPC client, file watcher, wake detector, location, audio, shortcuts
+│   ├── Models/      GRDB records: Session, Override, AppEvent, DailyStats, FIRESnapshot, Mode
+│   ├── Views/       MenuBar, Dashboard (Today/History/Weekly/Browsing/FIRE/Settings), Interception, Onboarding
+│   ├── Services/    XPC client, file watcher, wake detector, location, audio, shortcuts, browser history
 │   └── Utilities/   Constants, Database, FIRE calculator, Solar calculator, Error types
 ├── StayCellHelper/  LaunchDaemon target (runs as root, manages /etc/hosts)
 ├── Shared/          Code shared between app and daemon (XPC protocol, constants)

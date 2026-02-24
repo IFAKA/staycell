@@ -31,6 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var interceptionManager: InterceptionWindowManager!
     private var keyboardShortcutService: KeyboardShortcutService!
     private var presentationDetector: PresentationDetector!
+    private var appMonitor: AppMonitor!
+    private var browserHistoryService: BrowserHistoryService!
     private var overrideWindow: NSWindow?
     private var dashboardWindow: NSWindow?
     private var dbPool: DatabasePool?
@@ -144,6 +146,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
         presentationDetector.startMonitoring()
 
+        // Start app-switch monitor for behavioral context
+        appMonitor = AppMonitor()
+        if let dbPool {
+            appMonitor.setDatabase(dbPool)
+        }
+        appMonitor.startMonitoring()
+        appMonitor.pruneOldEvents()
+
+        // Start browser history import service (once-daily)
+        browserHistoryService = BrowserHistoryService()
+        if let dbPool {
+            browserHistoryService.setDatabase(dbPool)
+        }
+        browserHistoryService.importIfNeeded()
+
         // Set up wake detection and schedule
         setupScheduleSystem()
 
@@ -168,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             wakeDetector.stopMonitoring()
             keyboardShortcutService.unregister()
             presentationDetector.stopMonitoring()
+            appMonitor.stopMonitoring()
             xpcClient.disconnect()
             logger.info("StayCell app terminating cleanly")
         }
@@ -354,18 +372,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private func logOverride(level: Int, granted: Bool) {
         guard let dbPool else { return }
         let phraseIndex = (Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0 + level) % OverridePhrases.pool.count
-        var override = Override.attempt(
+        let intention = appState.currentSessionIntention
+
+        var record = Override.attempt(
             mode: appState.currentMode,
             level: level,
             phrase: OverridePhrases.pool[phraseIndex],
-            intention: appState.currentSessionIntention
+            intention: intention
         )
-        override.granted = granted
-        override.cancelled = !granted
+        record.granted = granted
+        record.cancelled = !granted
+
+        // Populate behavioral context fields
+        record.minutesIntoSession = timerEngine.isRunning ? timerEngine.elapsedSeconds / 60 : nil
+        let frontApp = NSWorkspace.shared.frontmostApplication
+        record.foregroundApp = frontApp?.localizedName
+        let switches = appMonitor?.switchesInLast(minutes: 10) ?? 0
+        record.appSwitchesLast10Min = switches > 0 ? switches : nil
+
+        // Read current browser URL via AppleScript (no permissions needed)
+        if let browserCtx = BrowserURLService.currentContext(bundleId: frontApp?.bundleIdentifier) {
+            record.foregroundURL = browserCtx.url
+            record.foregroundDomain = browserCtx.domain
+        }
+
+        // Capture pre-override browser context (navIntent, reload count, tab proliferation)
+        if let snap = BrowserHistoryService.contextSnapshot(
+            bundleId: frontApp?.bundleIdentifier,
+            domain: record.foregroundDomain
+        ) {
+            record.preOverrideNavIntent = snap.navIntent
+            record.preOverrideReloadCount = snap.reloadCount > 0 ? snap.reloadCount : nil
+            record.preOverrideTabsOpened = snap.tabsOpened > 0 ? snap.tabsOpened : nil
+            record.preOverrideBackNavRatio = snap.backNavRatio > 0 ? snap.backNavRatio : nil
+        }
+
+        // Capture system idle time via IOKit
+        let idleSecs = BrowserHistoryService.systemIdleSeconds()
+        record.preOverrideIdleSeconds = idleSecs > 0 ? idleSecs : nil
+
+        // Query last override timestamp for cascade detection
+        let lastOverrideSecs: Int? = (try? dbPool.read { db in
+            try Override.lastOverride(db: db)
+        }).flatMap { last in
+            let secs = Int(Date().timeIntervalSince(last.attemptedAt))
+            return secs > 0 ? secs : nil
+        }
+        record.timeSinceLastOverrideSecs = lastOverrideSecs
+
+        // Infer trigger category from accumulated signals
+        record.triggerCategory = record.inferredTriggerCategory(sessionIntention: intention)
 
         do {
             try dbPool.write { db in
-                try override.save(db)
+                try record.save(db)
             }
         } catch {
             logger.error("Failed to log override: \(error.localizedDescription)")
