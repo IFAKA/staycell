@@ -52,6 +52,13 @@ struct SettingsView: View {
                 .frame(width: 80)
             }
 
+            HStack {
+                Text("Workday end hour")
+                    .font(.subheadline)
+                Spacer()
+                Stepper("\(appState.workdayEndHour):00", value: $appState.workdayEndHour, in: 13...22)
+            }
+
             VStack(alignment: .leading, spacing: 6) {
                 Text("Work days")
                     .font(.subheadline)

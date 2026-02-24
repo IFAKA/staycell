@@ -10,6 +10,7 @@ struct OnboardingView: View {
     @State private var isInstallingDaemon = false
     @State private var installError: String?
     @State private var workStartHour = 9
+    @State private var workEndHour = 18
     @State private var selectedDays: Set<Int> = [2, 3, 4, 5, 6]
     @State private var dohWarnings: [String] = []
     @State private var hasCheckedDoH = false
@@ -65,11 +66,13 @@ struct OnboardingView: View {
                 } else {
                     Button("Start Working") {
                         appState.workdayStartHour = workStartHour
+                        appState.workdayEndHour = workEndHour
                         appState.workDays = selectedDays
                         appState.isOnboardingComplete = true
                         onComplete()
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(workEndHour <= workStartHour)
                 }
             }
             .padding(24)
@@ -355,6 +358,12 @@ struct OnboardingView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+
+                Text("When does your workday end?")
+                    .font(.subheadline.weight(.medium))
+                    .padding(.top, 4)
+
+                Stepper("\(workEndHour):00", value: $workEndHour, in: 13...22)
 
                 Text("Which days do you work?")
                     .font(.subheadline.weight(.medium))

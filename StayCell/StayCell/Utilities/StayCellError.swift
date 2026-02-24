@@ -18,6 +18,9 @@ enum StayCellError: Error, LocalizedError, Sendable {
     case permissionDenied(operation: String)
     case invalidModeTransition(from: String, to: String)
     case fileWatcherSetupFailed(path: String, underlying: String)
+    case ollamaNotRunning
+    case ollamaModelNotInstalled(model: String)
+    case ollamaRequestFailed(underlying: String)
 
     var errorDescription: String? {
         switch self {
@@ -49,6 +52,12 @@ enum StayCellError: Error, LocalizedError, Sendable {
             "Invalid mode transition from \(from) to \(to)"
         case .fileWatcherSetupFailed(let path, let underlying):
             "Failed to set up file watcher for \(path): \(underlying)"
+        case .ollamaNotRunning:
+            "Ollama is not running (localhost:11434 not reachable)"
+        case .ollamaModelNotInstalled(let model):
+            "Ollama model '\(model)' is not installed"
+        case .ollamaRequestFailed(let underlying):
+            "Ollama chat request failed: \(underlying)"
         }
     }
 
@@ -74,6 +83,12 @@ enum StayCellError: Error, LocalizedError, Sendable {
             "This mode transition is not allowed in the current state."
         case .fileWatcherSetupFailed:
             "Check file exists and app has read access."
+        case .ollamaNotRunning:
+            "Install Ollama from ollama.com, then run: ollama serve"
+        case .ollamaModelNotInstalled(let model):
+            "Pull the model manually: ollama pull \(model)"
+        case .ollamaRequestFailed:
+            "Check Ollama is running and the model is loaded."
         }
     }
 }

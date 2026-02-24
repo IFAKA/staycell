@@ -30,6 +30,8 @@ struct DashboardView: View {
                 FIREView(dbPool: dbPool)
             case .browsing:
                 BrowsingView(dbPool: dbPool)
+            case .reflect:
+                ReflectionView(dbPool: dbPool, appState: appState)
             case .settings:
                 SettingsView(appState: appState, dbPool: dbPool)
             }
@@ -44,6 +46,7 @@ enum DashboardTab: String, CaseIterable {
     case weekly
     case browsing
     case fire
+    case reflect
     case settings
 
     var title: String {
@@ -53,6 +56,7 @@ enum DashboardTab: String, CaseIterable {
         case .weekly: "Weekly"
         case .browsing: "Browsing"
         case .fire: "FIRE"
+        case .reflect: "Reflect"
         case .settings: "Settings"
         }
     }
@@ -64,6 +68,7 @@ enum DashboardTab: String, CaseIterable {
         case .weekly: "calendar"
         case .browsing: "globe"
         case .fire: "flame"
+        case .reflect: "brain.head.profile"
         case .settings: "gear"
         }
     }

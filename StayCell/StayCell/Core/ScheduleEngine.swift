@@ -19,7 +19,12 @@ final class ScheduleEngine {
         let isWorkday = appState.workDays.contains(weekday)
 
         if isWorkday {
-            generateWorkdaySchedule(anchor: anchor, solarNoon: solarNoon)
+            generateWorkdaySchedule(
+                anchor: anchor,
+                startHour: appState.workdayStartHour,
+                endHour: appState.workdayEndHour,
+                solarNoon: solarNoon
+            )
         } else {
             generateWeekendSchedule(anchor: anchor, solarNoon: solarNoon)
         }
@@ -39,8 +44,14 @@ final class ScheduleEngine {
 
     // MARK: - Schedule Generation
 
-    private func generateWorkdaySchedule(anchor: Date, solarNoon: Date?) {
+    private func generateWorkdaySchedule(anchor: Date, startHour: Int, endHour: Int, solarNoon: Date?) {
         var cursor = anchor
+
+        // Guard: floor at 4.5 hours of work time
+        let availableMinutes = max((endHour - startHour) * 60, 270)
+
+        // workEnd = anchor + morning routine (30) + work window
+        let workEnd = anchor.addingTimeInterval(Double(30 + availableMinutes) * 60)
 
         // Morning routine: 30 min
         blocks.append(ScheduleBlock(
@@ -52,41 +63,42 @@ final class ScheduleEngine {
         ))
         cursor = cursor.addingTimeInterval(30 * 60)
 
-        // Deep Work Block 1: 90 min
-        blocks.append(ScheduleBlock(
-            type: .deepWork,
-            mode: .deepWork,
-            startTime: cursor,
-            durationMinutes: TimerDurations.deepWorkMinutes,
-            label: "Deep Work 1"
-        ))
-        cursor = cursor.addingTimeInterval(Double(TimerDurations.deepWorkMinutes) * 60)
+        // Calculate how many deep work cycles fit
+        // Fixed overhead (inside work window): lunch(60) + shallow wrap(30) + end ritual(15) = 105
+        // Morning(30) is already consumed above
+        let cyclePoolMinutes = availableMinutes - 135 // 135 = morning + lunch + shallow + ritual
+        let cycleMinutes = TimerDurations.deepWorkMinutes + TimerDurations.breakMinutes // 90 + 15 = 105
+        let numCycles = max(1, cyclePoolMinutes / cycleMinutes)
+        let beforeLunch = (numCycles + 1) / 2
+        let afterLunch = numCycles - beforeLunch
 
-        // Break 1: 15 min
-        blocks.append(ScheduleBlock(
-            type: .breakTime,
-            mode: .personalTime,
-            startTime: cursor,
-            durationMinutes: TimerDurations.breakMinutes,
-            label: "Break"
-        ))
-        cursor = cursor.addingTimeInterval(Double(TimerDurations.breakMinutes) * 60)
+        // Deep work cycles before lunch (no break after last pre-lunch cycle)
+        for i in 0..<beforeLunch {
+            blocks.append(ScheduleBlock(
+                type: .deepWork,
+                mode: .deepWork,
+                startTime: cursor,
+                durationMinutes: TimerDurations.deepWorkMinutes,
+                label: "Deep Work \(i + 1)"
+            ))
+            cursor = cursor.addingTimeInterval(Double(TimerDurations.deepWorkMinutes) * 60)
 
-        // Deep Work Block 2: 90 min
-        blocks.append(ScheduleBlock(
-            type: .deepWork,
-            mode: .deepWork,
-            startTime: cursor,
-            durationMinutes: TimerDurations.deepWorkMinutes,
-            label: "Deep Work 2"
-        ))
-        cursor = cursor.addingTimeInterval(Double(TimerDurations.deepWorkMinutes) * 60)
+            if i < beforeLunch - 1 {
+                blocks.append(ScheduleBlock(
+                    type: .breakTime,
+                    mode: .personalTime,
+                    startTime: cursor,
+                    durationMinutes: TimerDurations.breakMinutes,
+                    label: "Break"
+                ))
+                cursor = cursor.addingTimeInterval(Double(TimerDurations.breakMinutes) * 60)
+            }
+        }
 
-        // Lunch / Sixth Hour: 60 min (at solar noon if available, otherwise after block 2)
-        if let noon = solarNoon, noon > cursor {
-            // If solar noon is later, extend the gap
-            let gap = noon.timeIntervalSince(cursor)
-            if gap > 0 && gap < 3600 {
+        // Lunch — snap to solar noon if within ±45 min ahead of cursor
+        if let noon = solarNoon {
+            let diff = noon.timeIntervalSince(cursor)
+            if diff > 0 && diff <= 45 * 60 {
                 cursor = noon
             }
         }
@@ -99,17 +111,44 @@ final class ScheduleEngine {
         ))
         cursor = cursor.addingTimeInterval(60 * 60)
 
-        // Deep Work Block 3: 90 min
-        blocks.append(ScheduleBlock(
-            type: .deepWork,
-            mode: .deepWork,
-            startTime: cursor,
-            durationMinutes: TimerDurations.deepWorkMinutes,
-            label: "Deep Work 3"
-        ))
-        cursor = cursor.addingTimeInterval(Double(TimerDurations.deepWorkMinutes) * 60)
+        // Deep work cycles after lunch (no break after last cycle)
+        for i in 0..<afterLunch {
+            blocks.append(ScheduleBlock(
+                type: .deepWork,
+                mode: .deepWork,
+                startTime: cursor,
+                durationMinutes: TimerDurations.deepWorkMinutes,
+                label: "Deep Work \(beforeLunch + i + 1)"
+            ))
+            cursor = cursor.addingTimeInterval(Double(TimerDurations.deepWorkMinutes) * 60)
 
-        // Transition ritual: 15 min
+            if i < afterLunch - 1 {
+                blocks.append(ScheduleBlock(
+                    type: .breakTime,
+                    mode: .personalTime,
+                    startTime: cursor,
+                    durationMinutes: TimerDurations.breakMinutes,
+                    label: "Break"
+                ))
+                cursor = cursor.addingTimeInterval(Double(TimerDurations.breakMinutes) * 60)
+            }
+        }
+
+        // Shallow wrap (emails/admin): 30 min, anchored 45 min before workEnd
+        let shallowStart = workEnd.addingTimeInterval(-45 * 60)
+        if shallowStart > cursor { cursor = shallowStart }
+        blocks.append(ScheduleBlock(
+            type: .shallowWork,
+            mode: .shallowWork,
+            startTime: cursor,
+            durationMinutes: 30,
+            label: "Emails & Admin"
+        ))
+        cursor = cursor.addingTimeInterval(30 * 60)
+
+        // Work End Ritual: 15 min, anchored 15 min before workEnd
+        let ritualStart = workEnd.addingTimeInterval(-15 * 60)
+        if ritualStart > cursor { cursor = ritualStart }
         blocks.append(ScheduleBlock(
             type: .routine,
             mode: .shallowWork,
@@ -117,13 +156,12 @@ final class ScheduleEngine {
             durationMinutes: 15,
             label: "Work End Ritual"
         ))
-        cursor = cursor.addingTimeInterval(15 * 60)
 
-        // Personal time until bedtime
+        // Personal time from workEnd
         blocks.append(ScheduleBlock(
             type: .personal,
             mode: .personalTime,
-            startTime: cursor,
+            startTime: workEnd,
             durationMinutes: 180,
             label: "Personal Time"
         ))

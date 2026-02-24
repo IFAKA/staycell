@@ -62,6 +62,10 @@ final class AppState {
         didSet { UserDefaults.standard.set(workdayStartHour, forKey: Keys.workdayStartHour) }
     }
 
+    var workdayEndHour: Int {
+        didSet { UserDefaults.standard.set(workdayEndHour, forKey: Keys.workdayEndHour) }
+    }
+
     var workDays: Set<Int> {
         didSet {
             UserDefaults.standard.set(Array(workDays), forKey: Keys.workDays)
@@ -88,6 +92,7 @@ final class AppState {
         self.isDaemonInstalled = defaults.bool(forKey: Keys.daemonInstalled)
         self.lastManualModeSwitchTime = defaults.object(forKey: Keys.lastManualModeSwitchTime) as? Date
         self.workdayStartHour = defaults.object(forKey: Keys.workdayStartHour) as? Int ?? 9
+        self.workdayEndHour = defaults.object(forKey: Keys.workdayEndHour) as? Int ?? 18
         let savedDays = defaults.array(forKey: Keys.workDays) as? [Int]
         self.workDays = Set(savedDays ?? [2, 3, 4, 5, 6]) // Mon-Fri (Calendar weekday: Sun=1)
 
@@ -151,6 +156,7 @@ final class AppState {
         static let daemonInstalled = "staycell.daemonInstalled"
         static let lastManualModeSwitchTime = "staycell.lastManualModeSwitchTime"
         static let workdayStartHour = "staycell.workdayStartHour"
+        static let workdayEndHour = "staycell.workdayEndHour"
         static let workDays = "staycell.workDays"
     }
 }
