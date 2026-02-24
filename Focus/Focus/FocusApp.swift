@@ -26,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var wakeDetector: WakeDetector!
     private var locationService: LocationService!
     private var notificationService: NotificationService!
+    private var audioMonitor: AudioMonitor!
+    private var sleepEngine: SleepEngine!
     private var interceptionManager: InterceptionWindowManager!
     private var overrideWindow: NSWindow?
     private var dashboardWindow: NSWindow?
@@ -71,6 +73,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             self?.showOverrideGate()
         }
 
+        // Initialize audio monitor and sleep engine
+        audioMonitor = AudioMonitor()
+        sleepEngine = SleepEngine(
+            appState: appState,
+            blockingEngine: blockingEngine,
+            audioMonitor: audioMonitor,
+            notificationService: notificationService
+        )
+        sleepEngine.onShowBedtimeOverlay = { [weak self] in
+            self?.interceptionManager.show()
+        }
+
         scheduleEngine = ScheduleEngine()
         wakeDetector = WakeDetector()
         locationService = LocationService()
@@ -111,6 +125,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         modeEngine.onModeChanged = { [weak self] _ in
             self?.menuBarManager.updateStatusItemDisplay()
         }
+
+        // Start audio monitoring
+        audioMonitor.startMonitoring()
 
         // Set up wake detection and schedule
         setupScheduleSystem()
@@ -171,6 +188,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private func setupScheduleSystem() {
         wakeDetector.onDayAnchorSet = { [weak self] anchor in
             guard let self else { return }
+            self.sleepEngine.calculateBedtime(dayAnchor: anchor)
+            self.sleepEngine.startMonitoring()
             self.scheduleEngine.generateSchedule(
                 anchor: anchor,
                 appState: self.appState,

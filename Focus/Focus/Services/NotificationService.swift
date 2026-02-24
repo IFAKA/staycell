@@ -126,6 +126,38 @@ final class NotificationService {
         center.add(request)
     }
 
+    // MARK: - Sleep Notifications
+
+    func sendWindDownNotification(minutesLeft: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = "Wind-down in \(minutesLeft) minutes."
+        content.body = minutesLeft <= 30 ? "Start closing your work." : "Blocking will tighten soon."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "winddown.\(minutesLeft)",
+            content: content,
+            trigger: nil
+        )
+
+        center.add(request)
+    }
+
+    func sendCloseSessionsNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Close your sessions."
+        content.body = "Bedtime in 15 minutes."
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "closesessions",
+            content: content,
+            trigger: nil
+        )
+
+        center.add(request)
+    }
+
     func removeAllPending() {
         center.removeAllPendingNotificationRequests()
     }
