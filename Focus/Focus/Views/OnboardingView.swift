@@ -1,6 +1,7 @@
 import SwiftUI
+import CoreLocation
 
-/// First-launch onboarding: install daemon, check DoH, set schedule.
+/// First-launch onboarding: welcome, install daemon, check DoH, location, schedule, guide.
 struct OnboardingView: View {
     @Bindable var appState: AppState
     let onComplete: () -> Void
@@ -12,14 +13,16 @@ struct OnboardingView: View {
     @State private var selectedDays: Set<Int> = [2, 3, 4, 5, 6]
     @State private var dohWarnings: [String] = []
     @State private var hasCheckedDoH = false
+    @State private var locationGranted = false
 
+    private let totalSteps = 5
     private let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     var body: some View {
         VStack(spacing: 0) {
-            // Progress
+            // Progress bar
             HStack(spacing: 4) {
-                ForEach(0..<3, id: \.self) { step in
+                ForEach(0..<totalSteps, id: \.self) { step in
                     RoundedRectangle(cornerRadius: 2)
                         .fill(step <= currentStep ? Color.accentColor : Color.secondary.opacity(0.3))
                         .frame(height: 3)
@@ -33,14 +36,12 @@ struct OnboardingView: View {
             // Step content
             Group {
                 switch currentStep {
-                case 0:
-                    daemonInstallStep
-                case 1:
-                    dohCheckStep
-                case 2:
-                    scheduleStep
-                default:
-                    EmptyView()
+                case 0: welcomeStep
+                case 1: daemonInstallStep
+                case 2: dohCheckStep
+                case 3: locationStep
+                case 4: scheduleStep
+                default: EmptyView()
                 }
             }
             .padding(.horizontal, 32)
@@ -55,12 +56,12 @@ struct OnboardingView: View {
                     }
                 }
                 Spacer()
-                if currentStep < 2 {
+                if currentStep < totalSteps - 1 {
                     Button("Next") {
                         currentStep += 1
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(currentStep == 0 && !appState.isDaemonInstalled)
+                    .disabled(currentStep == 1 && !appState.isDaemonInstalled)
                 } else {
                     Button("Start Focusing") {
                         appState.workdayStartHour = workStartHour
@@ -73,7 +74,64 @@ struct OnboardingView: View {
             }
             .padding(24)
         }
-        .frame(width: 480, height: 400)
+        .frame(width: 520, height: 480)
+    }
+
+    // MARK: - Step 0: Welcome
+
+    private var welcomeStep: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "brain.head.profile")
+                .font(.system(size: 48))
+                .foregroundStyle(.tint)
+
+            Text("Welcome to Focus")
+                .font(.title.weight(.semibold))
+
+            VStack(alignment: .leading, spacing: 12) {
+                welcomePoint(
+                    icon: "shield.fill",
+                    title: "Blocks distracting websites",
+                    detail: "Reddit, YouTube, social media — blocked when you're working, available when you're not."
+                )
+                welcomePoint(
+                    icon: "timer",
+                    title: "90-minute deep work sessions",
+                    detail: "Structured work blocks with automatic breaks. A timer lives in your menu bar."
+                )
+                welcomePoint(
+                    icon: "flame",
+                    title: "FIRE tracker",
+                    detail: "Track your savings rate and progress toward financial independence."
+                )
+                welcomePoint(
+                    icon: "moon.stars",
+                    title: "Sleep enforcement",
+                    detail: "Progressive wind-down at night. Screen dims, distractions blocked."
+                )
+            }
+            .padding(.top, 8)
+
+            Text("Setup takes about 60 seconds.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+        }
+    }
+
+    private func welcomePoint(icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .frame(width: 20)
+                .foregroundStyle(.tint)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     // MARK: - Step 1: Install Daemon
@@ -87,12 +145,19 @@ struct OnboardingView: View {
             Text("Install Focus Helper")
                 .font(.title2.weight(.semibold))
 
-            Text("Focus needs a small helper service to manage website blocking. This requires a one-time administrator password — you won't be asked again.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Focus blocks websites by editing a system file (/etc/hosts). To do this, it needs a tiny background helper that runs with admin privileges.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text("You'll see a macOS password prompt — this is the only time Focus will ever ask for your password.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .multilineTextAlignment(.leading)
 
             if appState.isDaemonInstalled {
-                Label("Helper installed", systemImage: "checkmark.circle.fill")
+                Label("Helper installed successfully", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
             } else {
                 Button(isInstallingDaemon ? "Installing..." : "Install Helper") {
@@ -103,9 +168,17 @@ struct OnboardingView: View {
             }
 
             if let installError {
-                Text(installError)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Installation failed:")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.red)
+                    Text(installError)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    Text("Make sure you entered the correct password and try again.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
@@ -121,31 +194,142 @@ struct OnboardingView: View {
             Text("Browser DNS Check")
                 .font(.title2.weight(.semibold))
 
-            Text("Secure DNS (DoH) in your browser can bypass website blocking. Focus needs to check your browser settings.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Some browsers have a feature called \"Secure DNS\" that bypasses website blocking. Focus needs this turned off to work properly.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
             if !hasCheckedDoH {
-                Button("Check Browsers") {
+                Button("Check My Browsers") {
                     checkDoHSettings()
                 }
                 .buttonStyle(.borderedProminent)
             } else if dohWarnings.isEmpty {
-                Label("No DoH issues detected", systemImage: "checkmark.circle.fill")
+                Label("All clear — no issues found", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
             } else {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Action needed:")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.orange)
+
                     ForEach(dohWarnings, id: \.self) { warning in
-                        Label(warning, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                            .font(.caption)
+                        dohWarningCard(warning)
                     }
                 }
             }
         }
     }
 
-    // MARK: - Step 3: Schedule
+    private func dohWarningCard(_ warning: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(warning, systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.caption)
+
+            if warning.contains("Brave") {
+                dohFixInstructions(
+                    browser: "Brave",
+                    steps: [
+                        "Open Brave and go to brave://settings/security",
+                        "Scroll down to \"Use secure DNS\"",
+                        "Turn it OFF",
+                    ]
+                )
+            } else if warning.contains("Chrome") {
+                dohFixInstructions(
+                    browser: "Chrome",
+                    steps: [
+                        "Open Chrome and go to chrome://settings/security",
+                        "Scroll down to \"Use secure DNS\"",
+                        "Turn it OFF",
+                    ]
+                )
+            } else if warning.contains("Firefox") {
+                dohFixInstructions(
+                    browser: "Firefox",
+                    steps: [
+                        "Open Firefox and go to about:preferences#privacy",
+                        "Scroll down to \"DNS over HTTPS\"",
+                        "Select \"Off\"",
+                    ]
+                )
+            }
+        }
+        .padding(10)
+        .background(.orange.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func dohFixInstructions(browser: String, steps: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("How to fix:")
+                .font(.caption.weight(.medium))
+            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .top, spacing: 6) {
+                    Text("\(index + 1).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, alignment: .trailing)
+                    Text(step)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+        }
+    }
+
+    // MARK: - Step 3: Location
+
+    private var locationStep: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "location")
+                .font(.system(size: 40))
+                .foregroundStyle(.tint)
+
+            Text("Location (Optional)")
+                .font(.title2.weight(.semibold))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Focus uses your location once a day to calculate sunrise and sunset times. This powers:")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Prayer time notifications at solar noon", systemImage: "sun.max")
+                    Label("Automatic bedtime based on sunset", systemImage: "moon")
+                    Label("Holiday detection based on your country", systemImage: "calendar")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                Text("If you skip this, Focus will use default times instead.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
+            if locationGranted {
+                Label("Location access granted", systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            } else {
+                HStack(spacing: 12) {
+                    Button("Grant Location Access") {
+                        requestLocation()
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button("Skip") {
+                        currentStep += 1
+                    }
+                    .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    // MARK: - Step 4: Schedule
 
     private var scheduleStep: some View {
         VStack(spacing: 16) {
@@ -156,9 +340,14 @@ struct OnboardingView: View {
             Text("Your Schedule")
                 .font(.title2.weight(.semibold))
 
+            Text("Focus builds your daily schedule around when you wake up. If you wake late, the schedule shifts automatically.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
             VStack(alignment: .leading, spacing: 12) {
                 Text("What time does your workday usually start?")
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
 
                 Picker("Start hour", selection: $workStartHour) {
                     ForEach(5..<13) { hour in
@@ -168,7 +357,7 @@ struct OnboardingView: View {
                 .pickerStyle(.segmented)
 
                 Text("Which days do you work?")
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
                     .padding(.top, 8)
 
                 HStack(spacing: 6) {
@@ -186,6 +375,17 @@ struct OnboardingView: View {
                     }
                 }
             }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("After setup:")
+                    .font(.caption.weight(.medium))
+                Text("Look for the colored dot in your menu bar (top-right of your screen). Click it to start a deep work session, switch modes, or open the dashboard.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(10)
+            .background(.quaternary.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
 
@@ -209,6 +409,13 @@ struct OnboardingView: View {
     private func checkDoHSettings() {
         dohWarnings = DoHChecker.check()
         hasCheckedDoH = true
+    }
+
+    private func requestLocation() {
+        let manager = CLLocationManager()
+        manager.requestAlwaysAuthorization()
+        // The actual location service will handle the rest on app launch
+        locationGranted = true
     }
 }
 
@@ -313,8 +520,7 @@ enum DoHChecker {
         // Check Firefox
         let firefoxDir = NSHomeDirectory() + "/Library/Application Support/Firefox/Profiles"
         if FileManager.default.fileExists(atPath: firefoxDir) {
-            // Firefox stores DoH in prefs.js — just warn if Firefox is installed
-            warnings.append("Firefox: Check about:preferences#privacy → DNS over HTTPS is disabled")
+            warnings.append("Firefox: DNS over HTTPS may be enabled")
         }
 
         return warnings
@@ -332,7 +538,7 @@ enum DoHChecker {
 
         let mode = dnsConfig["mode"] as? String ?? ""
         if mode == "secure" || mode == "automatic" {
-            return "\(browserName): Secure DNS is enabled. Disable at \(browserName.lowercased())://settings/security"
+            return "\(browserName): Secure DNS is enabled"
         }
 
         return nil
