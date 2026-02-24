@@ -63,11 +63,33 @@ final class StayCellHelperDelegate: NSObject, NSXPCListenerDelegate, StayCellHel
         logger.info("Received uninstall request")
         do {
             try hostsManager.cleanUninstall()
+            // Reply before self-destructing so the app receives the confirmation.
             reply(true, nil)
+            // Schedule removal of daemon artifacts after a short delay.
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.removeSelf()
+            }
         } catch {
             logger.error("Uninstall failed: \(error.localizedDescription)")
             reply(false, error.localizedDescription)
         }
+    }
+
+    private func removeSelf() {
+        // Remove LaunchDaemon plist and helper binary (daemon runs as root).
+        try? FileManager.default.removeItem(atPath: AppConstants.launchDaemonPlistPath)
+        try? FileManager.default.removeItem(atPath: AppConstants.helperToolPath)
+        logger.info("Daemon artifacts removed — bootstrapping out")
+
+        // Unload from launchd (this terminates the process).
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/bin/launchctl")
+        proc.arguments = ["bootout", "system/\(AppConstants.launchDaemonLabel)"]
+        try? proc.run()
+        proc.waitUntilExit()
+
+        // Fallback if bootout didn't terminate us.
+        exit(0)
     }
 }
 
