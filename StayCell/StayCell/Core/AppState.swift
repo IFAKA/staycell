@@ -23,6 +23,18 @@ final class AppState {
     var lastError: StayCellError?
     var hasError: Bool { lastError != nil }
 
+    // MARK: - Error Log
+
+    struct ErrorLogEntry: Identifiable, Sendable {
+        let id = UUID()
+        let timestamp: Date
+        let message: String
+        let suggestion: String
+        let context: [String: String]
+    }
+
+    private(set) var errorLog: [ErrorLogEntry] = []
+
     // MARK: - Timer State
 
     var timerRemainingSeconds: Int = 0
@@ -100,13 +112,37 @@ final class AppState {
 
     // MARK: - Error Handling
 
-    func setError(_ error: StayCellError) {
+    func setError(_ error: StayCellError, context: [String: String] = [:]) {
         lastError = error
-        logError(error, context: ["mode": currentMode.rawValue])
+        let ctx = context.merging(["mode": currentMode.rawValue]) { existing, _ in existing }
+        let entry = ErrorLogEntry(
+            timestamp: Date(),
+            message: error.localizedDescription,
+            suggestion: error.suggestion,
+            context: ctx
+        )
+        errorLog.append(entry)
+        if errorLog.count > 50 { errorLog.removeFirst() }
+        logError(error, context: ctx)
     }
 
     func clearError() {
         lastError = nil
+    }
+
+    func clearErrorLog() {
+        errorLog = []
+    }
+
+    /// Formats the error log as a plain-text block ready to paste into an AI agent.
+    var errorLogForAI: String {
+        guard !errorLog.isEmpty else { return "No errors recorded." }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return errorLog.map { entry in
+            let ctx = entry.context.isEmpty ? "" : "\n  Context: \(entry.context.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))"
+            return "[\(formatter.string(from: entry.timestamp))] \(entry.message)\(ctx)\n  Fix: \(entry.suggestion)"
+        }.joined(separator: "\n\n")
     }
 
     private enum Keys {

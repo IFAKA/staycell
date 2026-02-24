@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var showUninstallConfirm = false
     @State private var isUninstalling = false
     @State private var uninstallStep = ""
+    @State private var showErrorLogCopied = false
 
     var body: some View {
         ScrollView {
@@ -23,6 +24,8 @@ struct SettingsView: View {
                 keyboardShortcuts
                 Divider()
                 dataSection
+                Divider()
+                errorLogSection
                 Divider()
                 dangerZone
             }
@@ -123,6 +126,60 @@ struct SettingsView: View {
             }
 
             Text("Exports sessions, overrides, and FIRE data to a JSON file.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Error Log
+
+    private var errorLogSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Error Log")
+                .font(.headline)
+
+            if appState.errorLog.isEmpty {
+                Text("No errors recorded this session.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: 8) {
+                    Button("Copy for AI (\(appState.errorLog.count))") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(appState.errorLogForAI, forType: .string)
+                        showErrorLogCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            showErrorLogCopied = false
+                        }
+                    }
+                    .controlSize(.small)
+
+                    if showErrorLogCopied {
+                        Text("Copied!")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+
+                    Spacer()
+
+                    Button("Clear") {
+                        appState.clearErrorLog()
+                    }
+                    .controlSize(.small)
+                    .foregroundStyle(.secondary)
+                }
+
+                // Last error preview
+                if let last = appState.errorLog.last {
+                    Text(last.message)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                }
+            }
+
+            Text("Captures errors during this session. Paste copied text into your AI agent.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
