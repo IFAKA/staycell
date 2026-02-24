@@ -190,11 +190,17 @@ struct MenuBarPopover: View {
 
     private var footer: some View {
         HStack {
-            let count = appState.currentMode.blockedDomains.count
-            Text("\(count) domains blocked")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            Button("Dashboard") {
+                if let delegate = NSApp.delegate as? AppDelegate {
+                    delegate.showDashboard()
+                }
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .font(.caption2)
+
             Spacer()
+
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }

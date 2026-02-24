@@ -59,6 +59,19 @@ enum DatabaseManager {
             }
         }
 
+        migrator.registerMigration("v4_daily_stats") { db in
+            try db.create(table: "daily_stats") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("date", .text).notNull().unique()
+                t.column("deepWorkMinutes", .integer).notNull().defaults(to: 0)
+                t.column("shallowWorkMinutes", .integer).notNull().defaults(to: 0)
+                t.column("sessionsCompleted", .integer).notNull().defaults(to: 0)
+                t.column("sessionsAbandoned", .integer).notNull().defaults(to: 0)
+                t.column("overrideCount", .integer).notNull().defaults(to: 0)
+                t.column("overridesGranted", .integer).notNull().defaults(to: 0)
+            }
+        }
+
         try migrator.migrate(dbPool)
         logger.info("Database opened at \(databasePath)")
         return dbPool

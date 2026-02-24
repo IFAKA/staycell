@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var notificationService: NotificationService!
     private var interceptionManager: InterceptionWindowManager!
     private var overrideWindow: NSWindow?
+    private var dashboardWindow: NSWindow?
     private var dbPool: DatabasePool?
     private var onboardingWindow: NSWindow?
     private let logger = Logger.app
@@ -335,12 +336,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
     }
 
+    @MainActor
+    func showDashboard() {
+        if let window = dashboardWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let dashboardView = DashboardView(
+            appState: appState,
+            modeEngine: modeEngine,
+            scheduleEngine: scheduleEngine,
+            dbPool: dbPool
+        )
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 700, height: 500),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Focus Dashboard"
+        window.contentView = NSHostingView(rootView: dashboardView)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        window.delegate = self
+        dashboardWindow = window
+    }
+
     private func registerLoginItem() {
         do {
             try SMAppService.mainApp.register()
             logger.info("Registered as login item")
         } catch {
             logger.warning("Failed to register as login item: \(error.localizedDescription)")
+        }
+    }
+}
+
+extension AppDelegate: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        if window === dashboardWindow {
+            dashboardWindow = nil
         }
     }
 }
