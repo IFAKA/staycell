@@ -9,6 +9,8 @@ struct SettingsView: View {
 
     @State private var showExportSuccess = false
     @State private var showUninstallConfirm = false
+    @State private var isUninstalling = false
+    @State private var uninstallStep = ""
 
     var body: some View {
         ScrollView {
@@ -134,15 +136,25 @@ struct SettingsView: View {
                 .font(.headline)
                 .foregroundStyle(.red)
 
-            Button("Uninstall StayCell Completely") {
-                showUninstallConfirm = true
-            }
-            .controlSize(.small)
-            .foregroundStyle(.red)
+            if isUninstalling {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(uninstallStep)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Button("Uninstall StayCell Completely") {
+                    showUninstallConfirm = true
+                }
+                .controlSize(.small)
+                .foregroundStyle(.red)
 
-            Text("Removes daemon, restores /etc/hosts, deletes all data.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text("Removes daemon, restores /etc/hosts, deletes all data.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .alert("Uninstall StayCell?", isPresented: $showUninstallConfirm) {
             Button("Cancel", role: .cancel) {}
@@ -194,15 +206,19 @@ struct SettingsView: View {
     }
 
     private func performUninstall() {
+        isUninstalling = true
         Task { @MainActor in
-            // 1. Restore /etc/hosts
+            // 1. Restore /etc/hosts + remove daemon files
+            uninstallStep = "Restoring /etc/hosts and removing daemon…"
             let xpcClient = XPCClient()
             _ = try? await xpcClient.uninstall()
 
             // 2. Remove login item
+            uninstallStep = "Removing login item…"
             try? await SMAppService.mainApp.unregister()
 
             // 3. Delete app data
+            uninstallStep = "Deleting app data…"
             let appSupport = NSSearchPathForDirectoriesInDomains(.applicationSupportDirectory, .userDomainMask, true).first!
             let focusDir = (appSupport as NSString).appendingPathComponent("StayCell")
             try? FileManager.default.removeItem(atPath: focusDir)
@@ -213,9 +229,12 @@ struct SettingsView: View {
             try? FileManager.default.removeItem(atPath: focusLogs)
 
             // 5. Delete preferences
+            uninstallStep = "Clearing preferences…"
             UserDefaults.standard.removePersistentDomain(forName: AppConstants.bundleIdentifier)
 
             // 6. Quit
+            uninstallStep = "Done. Quitting…"
+            try? await Task.sleep(for: .milliseconds(600))
             NSApplication.shared.terminate(nil)
         }
     }
