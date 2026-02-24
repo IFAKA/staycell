@@ -24,8 +24,12 @@ struct DashboardView: View {
                 TodayView(appState: appState, modeEngine: modeEngine, scheduleEngine: scheduleEngine, dbPool: dbPool)
             case .history:
                 HistoryView(dbPool: dbPool)
+            case .weekly:
+                WeeklyStatsView(dbPool: dbPool)
             case .fire:
                 FIREView(dbPool: dbPool)
+            case .settings:
+                SettingsView(appState: appState, dbPool: dbPool)
             }
         }
         .frame(minWidth: 600, minHeight: 400)
@@ -35,13 +39,17 @@ struct DashboardView: View {
 enum DashboardTab: String, CaseIterable {
     case today
     case history
+    case weekly
     case fire
+    case settings
 
     var title: String {
         switch self {
         case .today: "Today"
         case .history: "History"
+        case .weekly: "Weekly"
         case .fire: "FIRE"
+        case .settings: "Settings"
         }
     }
 
@@ -49,7 +57,9 @@ enum DashboardTab: String, CaseIterable {
         switch self {
         case .today: "sun.max"
         case .history: "chart.bar"
+        case .weekly: "calendar"
         case .fire: "flame"
+        case .settings: "gear"
         }
     }
 }

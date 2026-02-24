@@ -13,9 +13,16 @@ final class InterceptionWindowManager {
     var onDismiss: (() -> Void)?
     var onOverrideRequested: (() -> Void)?
 
+    /// When true, overlays are suppressed (e.g., during a presentation or call).
+    var suppressOverlays = false
+
     /// Show the interception overlay on all screens.
     func show() {
         guard windows.isEmpty else { return }
+        guard !suppressOverlays else {
+            logger.info("Overlay suppressed — presentation/call active")
+            return
+        }
 
         for screen in NSScreen.screens {
             let window = createWindow(for: screen)

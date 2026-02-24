@@ -29,6 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private var audioMonitor: AudioMonitor!
     private var sleepEngine: SleepEngine!
     private var interceptionManager: InterceptionWindowManager!
+    private var keyboardShortcutService: KeyboardShortcutService!
+    private var presentationDetector: PresentationDetector!
     private var overrideWindow: NSWindow?
     private var dashboardWindow: NSWindow?
     private var dbPool: DatabasePool?
@@ -129,6 +131,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         // Start audio monitoring
         audioMonitor.startMonitoring()
 
+        // Register global keyboard shortcuts
+        keyboardShortcutService = KeyboardShortcutService()
+        keyboardShortcutService.register { [weak self] mode in
+            self?.modeEngine.switchMode(to: mode)
+        }
+
+        // Start presentation mode detection
+        presentationDetector = PresentationDetector()
+        presentationDetector.onStateChanged = { [weak self] isPresenting in
+            self?.interceptionManager.suppressOverlays = isPresenting
+        }
+        presentationDetector.startMonitoring()
+
         // Set up wake detection and schedule
         setupScheduleSystem()
 
@@ -151,6 +166,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             appState.clearDirtyFlag()
             hostsWatcher.stopWatching()
             wakeDetector.stopMonitoring()
+            keyboardShortcutService.unregister()
+            presentationDetector.stopMonitoring()
             xpcClient.disconnect()
             logger.info("Focus app terminating cleanly")
         }
