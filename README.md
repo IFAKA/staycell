@@ -109,6 +109,32 @@ Dashboard → FIRE tab. Enter monthly income, expenses, invested amount, and net
 
 Dashboard → Settings → Export All Data (JSON). Exports all sessions, overrides, and FIRE data.
 
+## What's missing
+
+Focus implements the blocking and structure layers of the system it was designed around. Several planned features are not built yet:
+
+### Not yet implemented
+
+- **The Companion**: The plan describes an on-device AI (Apple FoundationModels) that observes your behavioral patterns and speaks rarely but precisely — "Third attempt this afternoon. You're avoiding the auth refactor." Currently the interception screen is static. It shows the same Jesus Prayer every time regardless of context. The companion would make it personal.
+
+- **Trigger inference**: The plan describes capturing objective signals at every blocked-site attempt (time of day, minutes into session, foreground app, which site, override count) and inferring *why* you're distracted across 12 trigger categories (boredom, fatigue, avoidance, autopilot, acedia, analysis paralysis, etc.). None of this is implemented. Overrides are logged but not analyzed.
+
+- **Browser extension**: A ~50-line Brave extension that tracks time per domain, tab switching patterns, and AI chatbot usage. Without it, the app only knows "user is in Brave" — not what you're actually doing. This is critical for detecting the analysis paralysis loop (AI chatbot → docs → AI chatbot → no code written).
+
+- **Cascade detection**: The plan describes detecting rising pressure across sessions — if override attempts increase across consecutive sessions and a session was abandoned, proactively intervene before a full breakdown. Currently overrides are counted but the trend is not tracked.
+
+- **Weekly review insights**: SQL correlations like "80% of reddit attempts happen 40-60 min into sessions" or "you override most when working on tasks described as 'bug fix'." The weekly stats view shows totals but no pattern analysis.
+
+- **90-day tracking**: The essay describes a ~90-day timeline for dopamine receptor recalibration. The app has no concept of "you've been doing this for X days" or progress toward that neurobiological milestone.
+
+### Cannot implement (structural gaps)
+
+- **Layer 3 — Social forcing functions**: The app blocks distractions but doesn't connect you to people. The essay is clear that prolonged isolation causes neurobiological changes in reward processing. Focusmate sessions, parish attendance, open-source contributor meetings, language exchange — these are external. The app can't create social obligation. This is the most important gap.
+
+- **Phone**: The app runs on your Mac. Your phone is a separate attack surface with its own compulsion loops. The essay recommends deleting all social/entertainment apps and using web-only versions. The app can't enforce this.
+
+- **Identity reconstruction**: The essay's Layer 5 — shifting from "what am I giving up to save?" to "what kind of life am I building that happens to cost little?" — is a cognitive reframe the app can't perform. The FIRE tracker shows numbers but doesn't address the underlying question of what the money is for.
+
 ## Known limitations
 
 1. **Browser DNS bypass**: If your browser uses DNS-over-HTTPS (Secure DNS), website blocking won't work. The onboarding wizard checks for this and tells you how to fix it, but you have to do it manually.
