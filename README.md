@@ -205,3 +205,11 @@ StayCell/
 ```
 
 Built with Swift 6.2, SwiftUI, GRDB.swift, and Swift Charts. No external services, no accounts, no cloud.
+
+---
+
+## Support
+
+If this project is useful to you, you can support my work:
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/zfaka)
